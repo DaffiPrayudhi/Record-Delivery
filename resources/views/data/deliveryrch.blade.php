@@ -9,7 +9,7 @@
 @section('content')
 <div class="page-content">
     <div class="container-fluid">
-    <h1>Scan Paco Delivery : {{ session('model') }}</h1>
+    <h1>Scan Paco Delivery - {{session('no_transaksi')}}</h1>
         <div class="row">
             <div class="col-12">
                 <div class="card">
@@ -36,6 +36,43 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead class="table-header">
+                                                <tr>
+                                                    <th>Tanggal</th>
+                                                    <th>Model</th>
+                                                    <th>Part Number</th> 
+                                                    <th>Quantity Receh</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>{{ session('tgl_bln_thn') }}</td>
+                                                    <td>{{ session('model') }}</td>
+                                                    <td>
+                                                        @if(session('part_numbers') && is_array(session('part_numbers')))
+                                                            @foreach(session('part_numbers') as $partNumber)
+                                                                <p>{{ $partNumber }}</p> 
+                                                            @endforeach
+                                                        @else
+                                                            <p></p>
+                                                        @endif
+                                                    </td>
+                                                    <td>{{ session('qty_receh') }}</td> 
+                                                    <td colspan="8"></td>                     
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>  
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div> 
@@ -58,6 +95,7 @@
 
         function processQRData(qrData) {
             const dataArray = qrData.split('|');
+
 
             if (dataArray.length >= 4) {
                 const formData = new FormData(document.getElementById('dataForm'));
@@ -92,6 +130,7 @@
                 handleErrorPopup('Format data QR Code tidak valid.');
                 inputElement.value = "";
             }
+            dd(dataArray);
         }
 
     function handleErrorPopup(message) {
@@ -123,7 +162,7 @@
                     stopErrorSound(); 
                     isErrorSoundPlaying = false;
                 });
-            } else if (message === 'Quantity tidak dapat melebihi quantity record') {
+            } else if (message === 'Part Number tidak sesuai') {
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
@@ -134,12 +173,6 @@
                     stopErrorSound(); 
                     isErrorSoundPlaying = false;
                 });
-            } else if (message === 'Part Number tidak sesuai') {
-                localStorage.setItem('showPasswordError', 'true');
-                showPasswordProtectedPopup('Part Number tidak sesuai');
-            } else if (message === 'Data sudah ada dalam database') {
-                localStorage.setItem('showPasswordError', 'true');
-                showPasswordProtectedPopup('Data sudah ada dalam database');
             } else {
                 Swal.fire({
                     icon: 'error',
@@ -152,62 +185,6 @@
                     isErrorSoundPlaying = false;
                 });
             }
-        }
-
-        if (localStorage.getItem('showPasswordError')) {
-            showPasswordProtectedPopup("Masukkan Password terlebih dahulu");
-            if (!isErrorSoundPlaying) {  
-                playNotificationSound('error');
-                isErrorSoundPlaying = true; 
-            }
-        }
-
-        function showPasswordProtectedPopup(errorMessage) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal',
-                html: `<p>${errorMessage}</p>
-                    <input type="password" id="passwordInput" class="swal2-input" placeholder="Masukkan password untuk menutup notifikasi">`,
-                confirmButtonText: 'Submit',
-                preConfirm: () => {
-                    const password = document.getElementById('passwordInput').value;
-                    return fetch("{{ route('verify.password') }}", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                        },
-                        body: JSON.stringify({ password })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            localStorage.removeItem('showPasswordError'); 
-                            stopErrorSound(); 
-                            isErrorSoundPlaying = false; 
-                            return true;
-                        } else {
-                            throw new Error(data.message || 'Password salah.');
-                        }
-                    })
-                    .catch(error => {
-                        Swal.showValidationMessage(error.message);
-                        if (!isErrorSoundPlaying) {
-                            playNotificationSound('error');
-                            isErrorSoundPlaying = true;
-                        }
-                    });
-                }
-            }).then(result => {
-                if (!result.isConfirmed) {
-                    localStorage.setItem('showPasswordError', 'true');
-                    showPasswordProtectedPopup(errorMessage);
-                } else {
-                    document.getElementById('passwordInput').focus();
-                }
-            }).catch(error => {
-                Swal.showValidationMessage(error.message);
-            });
         }
 
         function stopErrorSound() {

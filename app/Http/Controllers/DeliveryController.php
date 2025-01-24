@@ -34,10 +34,8 @@ class DeliveryController extends Controller
 
         $totalQtyRcrd = Record::where('no_transaksi', $noTransaksi)->first();
         $totalQtyValueRcrd = $totalQtyRcrd ? $totalQtyRcrd->qty : 0;
-        
-        $qtyPcs = M_Qty_pcs::where('no_transaksi', $noTransaksi)->first()->qty_pcs ?? 0;
     
-        return view('data.delivery', compact('noTransaksi', 'tglBlnThn', 'plantDest', 'model', 'qty', 'pic','totalQtyValue','totalQtyValueRcrd','qtyPcs'));
+        return view('data.delivery', compact('noTransaksi', 'tglBlnThn', 'plantDest', 'model', 'qty', 'pic','totalQtyValue','totalQtyValueRcrd'));
     }
     
     public function store(Request $request)
@@ -226,18 +224,6 @@ class DeliveryController extends Controller
                 ->where('no_transaksi', $noTransaksi)
                 ->get(['no_transaksi', 'model', 'qty']);
 
-            $qtyPcsData = M_Qty_pcs::where('no_transaksi', $noTransaksi)->get(['no_transaksi', 'qty_pcs']);
-
-            foreach ($recordData as $record) {
-                $qtyPcs = $qtyPcsData->where('no_transaksi', $record->no_transaksi)->first();
-
-                if ($qtyPcs) {
-                    $record->total_qty = $record->qty + $qtyPcs->qty_pcs;
-                } else {
-                    $record->total_qty = $record->qty; 
-                }
-            }
-
             $deliveryData = Delivery::whereDate('tgl_bln_thn', $tglBlnThn)
                 ->where('no_transaksi', $noTransaksi)
                 ->selectRaw('no_transaksi, part_number, SUM(qty) as qty')
@@ -253,13 +239,13 @@ class DeliveryController extends Controller
                 ]);
             }
 
-            $recordTotalQty = $recordData->sum('total_qty');
-            $deliveryTotalQty = $deliveryData->sum('qty');
+            $recordQty = $recordData->sum('qty');
+            $deliveryQty = $deliveryData->sum('qty');
 
             $message = '';
             $status = false;
 
-            if ($recordTotalQty === $deliveryTotalQty) {
+            if ($recordQty === $deliveryQty) {
                 Record::whereDate('tgl_bln_thn', $tglBlnThn)->where('flag', 1)->update(['flag' => 0]);
                 Delivery::whereDate('tgl_bln_thn', $tglBlnThn)->where('flag', 1)->update(['flag' => 0]);
 

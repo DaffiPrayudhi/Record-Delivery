@@ -50,6 +50,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('/deliveryrch', controller: DeliveryRchController::class);
     Route::get('/delivery-data-receh', [DeliveryRchController::class, 'createreceh'])->name('delivery.createreceh');
     Route::post('/store-data-receh', [DeliveryRchController::class, 'storereceh'])->name('delivery.storereceh');
+    Route::post('/delivery/checkSerialNumber', [DeliveryRchController::class, 'checkSerialNumber'])->name('delivery.checkSerialNumber');
+
 
     //delivery
     Route::resource('/delivery', DeliveryController::class);

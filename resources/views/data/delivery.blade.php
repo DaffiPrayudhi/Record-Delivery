@@ -119,25 +119,6 @@
                                 </tbody>
                             </table>
                         </div>
-                        @if($qtyPcs > 0)
-                            <h3 style="margin-top: 20px">Quantity Pcs</h3>
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <thead class="table-header">
-                                        <tr>
-                                            <th>No Transaksi</th>
-                                            <th>Quantity PCS</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>{{ session('no_transaksi') }}</td>
-                                            <td>{{ $qtyPcs }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        @endif
                     </div>
                 </div>
             </div>

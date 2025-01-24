@@ -17,6 +17,8 @@ class M_Model_Part extends Model
         'model',
         'tipe_delv',
         'plant_dest',
+        'serial_number',
+        'qty_box',
     ];
 
     public $timestamps = false; 

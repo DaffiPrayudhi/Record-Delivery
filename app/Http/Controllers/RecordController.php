@@ -98,7 +98,7 @@ class RecordController extends Controller
                 return redirect()->route('delivery.create')->with('success', 'Data Quantity Full berhasil disimpan.');
             }
         }
-        // Logika untuk Quantity Receh
+        
         elseif ($validatedData['qty_type'] === 'receh') {
             if (!$request->has('qty_receh') || empty($validatedData['qty_receh'])) {
                 return redirect()->back()->withErrors(['qty_receh' => 'Quantity Receh harus diisi.'])->withInput();
@@ -116,6 +116,11 @@ class RecordController extends Controller
                 'qty_receh' => $validatedData['qty_receh'],
                 'qty' => 0,
             ]);
+
+            $partNumbers = M_Model_Part::where('model', $validatedData['model'])
+                                    ->distinct()
+                                    ->pluck('part_number')
+                                    ->toArray();
     
             if ($recordRch->save()) {
                 $request->session()->put([
@@ -129,6 +134,7 @@ class RecordController extends Controller
                     'flag' => 1,
                     'qty_receh' => $validatedData['qty_receh'],
                     'qty' => 0,
+                    'part_numbers' => $partNumbers, 
                 ]);
 
                 return redirect()->route('deliveryrch.create')->with('success', 'Data Quantity Receh berhasil disimpan.');

@@ -14,7 +14,7 @@
             <table class="table">
                 <thead class="table-header">
                     <tr>
-                        <th>Tanggal</th>
+                        <th>Tanggal Preparation</th>
                         <th>Model</th>
                         <th>Part Number</th> 
                         <th>Lot Number</th> 
@@ -121,25 +121,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        @if($qtyPcs > 0)
-                            <h3 style="margin-top: 20px">Quantity Pcs</h3>
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <thead class="table-header">
-                                        <tr>
-                                            <th>No Transaksi</th>
-                                            <th>Quantity PCS</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>{{ session('no_transaksi') }}</td>
-                                            <td>{{ $qtyPcs }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        @endif
+                
                     </div>
                 </div>
             </div>
@@ -189,43 +171,38 @@ $(document).ready(function() {
         });
 
         function processQRData(qrData) {
-            const dataArray = qrData.split('|');
+        // Validate the QR code format
+        const serialNumber = qrData.trim();  // Assume the data is just the serial number (no delimiter needed)
+        const model = "{{ session('model') }}";  // Get the model from the session
 
-            if (dataArray.length >= 4) {
-                const formData = new FormData(document.getElementById('dataForm'));
-                formData.append('tgl_bln_thn', new Date().toISOString().slice(0, 19).replace('T', ' '));
-                formData.append('part_number', dataArray[0]);
-                formData.append('qty', dataArray[2]);
-                formData.append('lot_number', dataArray[3]);
-                formData.append('flag', 1);
+        if (serialNumber) {
+            const formData = new FormData();
+            formData.append('serial_number', serialNumber);
+            formData.append('model', model);
+            formData.append('qty', 1);  // Add the quantity to be 1 for each valid scan
+            formData.append('tgl_bln_thn', new Date().toISOString().slice(0, 19).replace('T', ' '));
 
-                fetch("{{ route('delivery.storereceh') }}", {
-                    method: "POST",
-                    body: formData,
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        displayNotification('Data berhasil disimpan!', 'success');
-                        playNotificationSound('success');
-                        stopErrorSound(); 
-                        inputElement.value = ""; 
-                        table.ajax.reload();
-                        updateQuantityDelivery();
-                    } else {
-                        handleErrorPopup(data.message);
-                        inputElement.value = "";
-                    }
-                })
-                .catch(error => {
-                    displayNotification('Terjadi kesalahan: ' + error.message, 'danger');
-                    playNotificationSound('error');
-                });
-            } else {
-                handleErrorPopup('Format data QR Code tidak valid.');
-                inputElement.value = "";
-            }
+            fetch("{{ route('delivery.storereceh') }}", {
+                method: "POST",
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayNotification('Data berhasil disimpan!', 'success');
+                    inputElement.value = "";
+                    updateQuantityDelivery();
+                } else {
+                    handleErrorPopup(data.message);
+                }
+            })
+            .catch(error => {
+                displayNotification('Terjadi kesalahan: ' + error.message, 'danger');
+            });
+        } else {
+            handleErrorPopup('Data QR Code tidak valid.');
         }
+    }
 
     function handleErrorPopup(message) {
             stopErrorSound();
