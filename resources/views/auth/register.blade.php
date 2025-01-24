@@ -19,7 +19,7 @@
 
     <style>
         body {
-            background: url('{{ asset('B/assets/images/produksi1.jpg') }}') no-repeat center center fixed;
+            background: url('{{ asset('B/assets/images/1633.jpg') }}') no-repeat center center fixed;
             background-size: cover;
             color: #fff; 
         }

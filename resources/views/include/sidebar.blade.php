@@ -24,20 +24,9 @@
                     <span data-key="t-ecommerce">Proses Input</span>
                 </a>
                 <ul class="sub-menu" aria-expanded="false">
-                    <li><a href="{{ route('record.create') }}" data-key="t-product-detail">Record</a></li>
-                    <li><a href="{{ route('delivery.create') }}" data-key="t-product-detail">Scan</a></li>
+                    <li><a href="{{ route('record.create') }}" data-key="t-product-detail">New Scan</a></li>
                 </ul>
             </li>
-
-            <!-- <li>
-                <a href="javascript: void(0);" class="has-arrow">
-                    <i data-feather="archive"></i>
-                    <span data-key="t-ecommerce">Pemindahan Data</span>
-                </a>
-                <ul class="sub-menu" aria-expanded="false">
-                    <li><a href="{{ route('spareparts.import.view') }}" data-key="t-orders">Import</a></li>
-                </ul>
-            </li> -->
     </div>
     <!-- Sidebar -->
 </div>

@@ -3,18 +3,13 @@
 namespace App\Events;
 
 use Illuminate\Queue\SerializesModels;
-use App\Models\PurchaseRequest; // Tambahkan ini
+use App\Models\PurchaseRequest;
 
 class StatusSubmitChanged
 {
     use SerializesModels;
 
     public $data;
-
-    public function __construct(PurchaseRequest $data)
-    {
-        $this->data = $data;
-    }
 }
 
 

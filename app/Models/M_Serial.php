@@ -5,19 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Jenis extends Model
+class M_Serial extends Model
 {
     use HasFactory;
 
-    protected $table = 'jenis';
-    protected $primaryKey = 'id_jns';
-    public $timestamps = false; 
-    
+    protected $table = 'master_serial_number';
+    protected $primaryKey = 'id';
     protected $fillable = [
-        'uom', 
-        'mata_uang'
+        'model',
+        'serial_number',
     ];
 
-    
+    public $timestamps = false; 
 }
-

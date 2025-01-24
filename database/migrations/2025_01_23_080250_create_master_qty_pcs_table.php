@@ -11,14 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('delivery', function (Blueprint $table) {
+        Schema::create('master_qty_pcs', function (Blueprint $table) {
             $table->id();
-            $table->string('no_transaksi',25);
-            $table->datetime('tgl_bln_thn');
-            $table->string('part_number',50);
-            $table->string('lot_number', 30);
-            $table->string('pic', 50);
-            $table->integer('qty');
+            $table->string('no_transaksi');
+            $table->integer('qty_pcs');
             $table->tinyInteger('flag');
         });
     }
@@ -28,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('delivery');
+        Schema::dropIfExists('master_qty_pcs');
     }
 };

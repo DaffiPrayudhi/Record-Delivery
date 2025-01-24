@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Record;
-use App\Models\M_Model;
-use App\Models\Delivery;
-use App\Models\PurchaseRequest;
+use App\Models\RecordRch;
+use App\Models\M_Model_Part;
+use App\Models\M_Qty_pcs;
 use Yajra\DataTables\DataTables;
 use Exception;
 
@@ -19,12 +19,26 @@ class RecordController extends Controller
 
     public function create()
     {
-        $models = M_Model::select('model')
-                       ->whereNotNull('model')
-                       ->distinct()
-                       ->pluck('model');     
+        $models = M_Model_Part::select('model')
+                        ->whereNotNull('model')
+                        ->distinct()
+                        ->pluck('model');
 
-        return view('data.record', compact('models'));
+        $plant_dests = M_Model_Part::select('plant_dest')
+                        ->whereNotNull('plant_dest')
+                        ->distinct()
+                        ->pluck('plant_dest');  
+                        
+        $tipe_delvs = M_Model_Part::select('tipe_delv')
+                        ->whereNotNull('tipe_delv')
+                        ->distinct()
+                        ->pluck('tipe_delv');  
+
+        $picx = ['Iqbal', 'Nauval', 'Dandi', 'Bayu F', 'Eko', 'Putut'];
+        
+        $todayDate = date('Y-m-d');
+
+        return view('data.record', compact('models','plant_dests','tipe_delvs','todayDate','picx'));
     }
 
     /**
@@ -34,37 +48,95 @@ class RecordController extends Controller
     {
         $validatedData = $request->validate([
             'tgl_bln_thn' => 'required|date',
+            'tgl_bln_thn_dlv' => 'required|date',
             'model' => 'required|string',
-            'qty' => 'required|integer',
+            'qty_type' => 'required|string',
+            'qty' => 'nullable|integer|required_if:qty_type,full',
+            'qty_receh' => 'nullable|integer|required_if:qty_type,receh',
         ]);
-
+    
         $noTransaksi = 'AVI' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
 
-        $record = new Record([
-            'no_transaksi' => $noTransaksi,
-            'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
-            'model' => $validatedData['model'],
-            'plant_dest' => $request->input('plant_dest'), 
-            'pic' => $request->input('pic'),  
-            'flag' => 1,             
-            'qty' => $validatedData['qty'],
-        ]);
-
-        if ($record->save()) {
-            session([
+        $noTransaksiRcd = 'RCH' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
+    
+        if ($validatedData['qty_type'] === 'full') {
+            if (!$request->has('qty') || empty($validatedData['qty'])) {
+                return redirect()->back()->withErrors(['qty' => 'Quantity Full harus diisi.'])->withInput();
+            }
+    
+            $record = new Record([
                 'no_transaksi' => $noTransaksi,
                 'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
-                'plant_dest' => $request->input('plant_dest'),
+                'tgl_bln_thn_dlv' => $validatedData['tgl_bln_thn_dlv'],
                 'model' => $validatedData['model'],
-                'qty' => $validatedData['qty'],
+                'plant_dest' => $request->input('plant_dest'),
+                'tipe_delv' => $request->input('tipe_delv'),
                 'pic' => $request->input('pic'),
+                'flag' => 1,
+                'qty' => $validatedData['qty'],
+                'qty_receh' => 0,
+            ]);
+
+            $partNumbers = M_Model_Part::where('model', $validatedData['model'])
+                                    ->distinct()
+                                    ->pluck('part_number')
+                                    ->toArray();
+    
+            if ($record->save()) {
+                $request->session()->put([
+                    'no_transaksi' => $noTransaksi,
+                    'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
+                    'tgl_bln_thn_dlv' => $validatedData['tgl_bln_thn_dlv'],
+                    'plant_dest' => $request->input('plant_dest'),
+                    'tipe_delv' => $request->input('tipe_delv'),
+                    'model' => $validatedData['model'],
+                    'qty' => $validatedData['qty'],
+                    'pic' => $request->input('pic'),
+                    'part_numbers' => $partNumbers, 
+                ]);
+        
+                return redirect()->route('delivery.create')->with('success', 'Data Quantity Full berhasil disimpan.');
+            }
+        }
+        // Logika untuk Quantity Receh
+        elseif ($validatedData['qty_type'] === 'receh') {
+            if (!$request->has('qty_receh') || empty($validatedData['qty_receh'])) {
+                return redirect()->back()->withErrors(['qty_receh' => 'Quantity Receh harus diisi.'])->withInput();
+            }
+    
+            $recordRch = new RecordRch([
+                'no_transaksi' => $noTransaksiRcd,
+                'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
+                'tgl_bln_thn_dlv' => $validatedData['tgl_bln_thn_dlv'],
+                'model' => $validatedData['model'],
+                'plant_dest' => $request->input('plant_dest'),
+                'tipe_delv' => $request->input('tipe_delv'),
+                'pic' => $request->input('pic'),
+                'flag' => 1,
+                'qty_receh' => $validatedData['qty_receh'],
+                'qty' => 0,
             ]);
     
-            return redirect()->route('delivery.create')->with('success', 'Data berhasil disimpan');
-        } else {
-            return redirect()->back()->with('error', 'Data gagal disimpan');
+            if ($recordRch->save()) {
+                $request->session()->put([
+                    'no_transaksi' => $noTransaksiRcd,
+                    'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
+                    'tgl_bln_thn_dlv' => $validatedData['tgl_bln_thn_dlv'],
+                    'model' => $validatedData['model'],
+                    'plant_dest' => $request->input('plant_dest'),
+                    'tipe_delv' => $request->input('tipe_delv'),
+                    'pic' => $request->input('pic'),
+                    'flag' => 1,
+                    'qty_receh' => $validatedData['qty_receh'],
+                    'qty' => 0,
+                ]);
+
+                return redirect()->route('deliveryrch.create')->with('success', 'Data Quantity Receh berhasil disimpan.');
+            }
         }
-    }    
+    
+        return redirect()->back()->withErrors(['qty_type' => 'Terjadi kesalahan saat menyimpan data.'])->withInput();
+    }
 
     public function show(Record $data)
     {
@@ -97,12 +169,22 @@ class RecordController extends Controller
 
     public function getModelData($model)
     {
-        // Fetch the data for the selected model
-        $data = M_Model::where('model', $model)->first(['plant_dest', 'pic']);
-
-        // Return the data as JSON
+        $data = M_Model_Part::where('model', $model)->first(['plant_dest', 'pic']);
         return response()->json($data);
     }
+
+    public function getPlantDest(Request $request)
+    {
+        $model = $request->input('model');
+        $plant_dests = M_Model_Part::select('plant_dest')
+            ->where('model', $model)
+            ->whereNotNull('plant_dest')
+            ->distinct()
+            ->pluck('plant_dest');
+
+        return response()->json($plant_dests);
+    }
+
 
 
 }

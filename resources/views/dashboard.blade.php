@@ -24,65 +24,8 @@
             </div>
         </div>
         <!-- end page title -->
-        
-        <div class="row">
-            <div class="col-xl-4 col-md-6">
-                <div class="card card-h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <span class="text-muted mb-3 lh-1 d-block text-truncate"><b>Part Masuk & Keluar</b></span>
-                                <h4 class="mb-3">
-                                    <span class="counter-value" data-target="{{ $partMasuk + $partKeluar }}">0</span>
-                                </h4>
-                            </div>
-                            <div class="flex-shrink-0 text-end dash-widget">
-                                <div id="donut-chart1" class="apex-charts"></div>
-                            </div>
-                        </div>
-                    </div><!-- end card body -->
-                </div><!-- end card -->
-            </div>
 
-            <div class="col-xl-4 col-md-6">
-                <div class="card card-h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <span class="text-muted mb-3 lh-1 d-block text-truncate"><b>Status Barang</b></span>
-                                <h4 class="mb-3">
-                                    <span class="counter-value" data-target="{{ $statusOK + $statusDanger}}">0</span>
-                                </h4>
-                            </div>
-                            <div class="flex-shrink-0 text-end dash-widget">
-                                <div id="donut-chart3" class="apex-charts"></div>
-                            </div>
-                        </div>
-                    </div><!-- end card body -->
-                </div><!-- end card -->
-            </div>
-
-            <div class="col-xl-4 col-md-6">
-                <div class="card card-h-100" style="background-color: {{ $statusRcvid != 0 ? '#fff49b' : 'white' }};">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <span class="text-muted mb-3 lh-1 d-block text-truncate"><b>Remaining Part Delivery</b></span>
-                                <h4 class="mb-3">
-                                    <span class="counter-value" data-target="{{ $statusRcvid }}">0</span> Barang
-                                </h4>
-                            </div>
-                            <div class="flex-shrink-0 text-end dash-widget">
-                                <div class=""></div>
-                                <span><a href="{{ route('purchase.new.create') }}" data-key="t-orders" class="fas fa-edit" style="color: #000">Check It</a></span>
-                            </div>
-                        </div>
-                    </div><!-- end card body -->
-                </div><!-- end card -->
-            </div>
-        </div><!-- end row -->
-
-        <div class="row mb-3">
+        <!-- <div class="row mb-3">
             <div class="col-md-6">
                 <form id="filter-form" class="form-inline">
                     <div class="form-group mr-3">
@@ -96,7 +39,33 @@
                 </form>
             </div>
             <div class="col-md-6 text-right">
-                <!-- Optionally, you can add additional buttons or content here -->
+                
+            </div>
+        </div> -->
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h1>Transaksi ID</h1>
+                        <table id="record-table" class="table table-hover table-bordered table-responsive">
+                            <thead class="table-header">
+                                <tr>
+                                    <th>No Transaksi</th>
+                                    <th>Tanggal Preparation</th>
+                                    <th>Tanggal Delivery</th>
+                                    <th>Model</th>
+                                    <th>Part Name</th>
+                                    <th>Part Number</th>
+                                    <th>Tipe Delivery</th>
+                                    <th>Plant Destination</th>
+                                    <th>Qty</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -104,19 +73,19 @@
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-body">
+                        <h1>Transaksi Detail ID</h1>
                         <table id="spareparts-table" class="table table-hover table-bordered table-responsive">
                             <thead class="table-header">
                                 <tr>
-                                    <th>Nama Barang</th>
-                                    <th>Kode Barang</th>
-                                    <th>Address</th>
-                                    <th>Qty Dimesin</th>
-                                    <th>Lifetime (week)</th>
-                                    <th>Leadtime (week)</th>
-                                    <th>Minimal Stock</th>
-                                    <th>Stock Akhir Warehouse</th>
-                                    <th>Status</th>
-                                    <th>Add Data</th>
+                                    <th>No Transaksi</th>
+                                    <th>Tanggal</th>
+                                    <th>Model</th>
+                                    <th>Part Name</th>
+                                    <th>Part Number</th>
+                                    <th>Lot Number</th>
+                                    <th>Tipe Delivery</th>
+                                    <th>Plant Destination</th>
+                                    <th>Qty</th>
                                 </tr>
                             </thead>
                         </table>
@@ -149,38 +118,69 @@
 @endsection
 
 @section('scripts')
+
+<script>
+   $(document).ready(function() {
+       var table = $('#record-table').DataTable({
+           processing: true,
+           serverSide: true,
+           ajax: {
+               url: '{{ route('getrecord.data') }}',
+               type: 'GET'
+           },
+           columns: [
+               { data: 'no_transaksi', name: 'no_transaksi' },
+               { data: 'tgl_bln_thn', name: 'tgl_bln_thn' },
+               { data: 'tgl_bln_thn_dlv', name: 'tgl_bln_thn_dlv' },
+               { data: 'model', name: 'model' },
+               { data: 'part_name', name: 'part_name' },
+               { data: 'part_number', name: 'part_number' },
+               { data: 'tipe_delv', name: 'tipe_delv' },
+               { data: 'plant_dest', name: 'plant_dest' },
+               { data: 'qty', name: 'qty' },
+               { 
+                   data: 'status', 
+                   name: 'status',
+                   render: function(data, type, row) {
+                       if (data === 'Proses') {
+                           return '<span style="color: red; font-weight: bold;">' + data + '</span>';
+                       } else if (data === 'Berhasil') {
+                           return '<span style="color: green; font-weight: bold;">' + data + '</span>';
+                       }
+                       return data;
+                   }
+               }
+           ],
+           paging: true,
+           searching: true,
+           ordering: true,
+           info: false,
+           pageLength: 5,
+           lengthMenu: [5, 10, 25, 50],
+           lengthChange: false
+       });
+   });
+</script>
+
 <script>
    $(document).ready(function() {
     var table = $('#spareparts-table').DataTable({
         processing: true,
         serverSide: true,
-        responsive: true, // Keep responsive true
         ajax: {
-            url: '{{ route('spareparts.data') }}',
-            data: function (d) {
-                d.status = $('#status-filter').val();
-            }
+            url: '{{ route('getspareparts.data') }}',
+            type: 'GET'
         },
         columns: [
-            { data: 'nama_barang', name: 'nama_barang', responsivePriority: 1 }, // Always priority
-            { data: 'kode_barang', name: 'kode_barang', responsivePriority: 2 }, // Always priority
-            { data: 'address', name: 'address', responsivePriority: 6 },         // Low priority (hidden di mobile)
-            { data: 'total_qty', name: 'total_qty', responsivePriority: 5 },     // Low priority (hidden di mobile)
-            { data: 'lifetime', name: 'lifetime', responsivePriority: 7 },       // Low priority (hidden di mobile)
-            { data: 'leadtime', name: 'leadtime', responsivePriority: 8 },       // Low priority (hidden di mobile)
-            { data: 'min_stock', name: 'min_stock', responsivePriority: 3 },     // Medium priority
-            { data: 'stock_akhir_wrhs', name: 'stock_akhir_wrhs', responsivePriority: 4 }, // Medium priority
-            { data: 'action', name: 'action', orderable: false, searchable: false, responsivePriority: 1 },
-            {
-                data: 'kode_barang',
-                name: 'kode_barang',
-                orderable: false,
-                searchable: false,
-                render: function(data, type, row) {
-                    return '<button class="btn btn-outline-primary custom-btn add-data" style="border-radius: 10px;" data-nama="' + row.nama_barang + '" data-kode="' + row.kode_barang + '">-</button>';
-                },
-                responsivePriority: 1 // Always priority
-            }
+            { data: 'no_transaksi', name: 'no_transaksi'}, 
+            { data: 'tgl_bln_thn', name: 'tgl_bln_thn'}, 
+            { data: 'model', name: 'model'}, 
+            { data: 'part_name', name: 'part_name'},         
+            { data: 'part_number', name: 'part_number'},     
+            { data: 'lot_number', name: 'lot_number'},       
+            { data: 'tipe_delv', name: 'tipe_delv'},       
+            { data: 'plant_dest', name: 'plant_dest'},    
+            { data: 'qty', name: 'qty'}
         ],
         paging: true,
         searching: true,
@@ -190,64 +190,6 @@
         lengthMenu: [5, 10, 25, 50],
         lengthChange: false
     });
-
-    $('#status-filter').change(function () {
-        table.draw();
-    });
-
-    $('#spareparts-table').on('click', '.add-data', function() {
-        var namaBarang = $(this).data('nama');
-        var kodeBarang = $(this).data('kode');
-        window.location.href = '{{ route('partkeluar.create') }}?nama_barang=' + encodeURIComponent(namaBarang) + '&kode_barang=' + encodeURIComponent(kodeBarang);
-    });
-});
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    var options1 = {
-        chart: {
-            type: 'donut',
-            height: 80,
-            sparkline: {
-                enabled: true
-            }
-        },
-        series: [{{ $partKeluar }}, {{ $partMasuk }}],
-        labels: ['Part Keluar', 'Part Masuk'],
-        colors: ['#f5911f', '#007bff'],
-        tooltip: {
-            y: {
-                formatter: function(val) {
-                    return val;
-                }
-            }
-        }
-    };
-    var chart1 = new ApexCharts(document.querySelector("#donut-chart1"), options1);
-    chart1.render();
-
-    var options3 = {
-        chart: {
-            type: 'donut',
-            height: 80,
-            sparkline: {
-                enabled: true
-            }
-        },
-        series: [{{ $statusDanger }}, {{ $statusOK }}],
-        labels: ['Status Danger', 'Status OK'],
-        colors: ['#dc3545', '#28a745'], 
-        tooltip: {
-            y: {
-                formatter: function(val) {
-                    return val;
-                }
-            }
-        }
-    };
-    var chart3 = new ApexCharts(document.querySelector("#donut-chart3"), options3);
-    chart3.render();
 });
 </script>
 

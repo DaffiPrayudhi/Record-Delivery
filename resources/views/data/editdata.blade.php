@@ -67,7 +67,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="editModel" class="form-label">Model</label>
-                        <input type="text" class="form-control" name="max_model" id="editModel" required>
+                        <input type="text" class="form-control" name="part_number" id="editModel" required>
                     </div>
                     <div class="mb-3">
                         <label for="editLotNumber" class="form-label">Lot Number</label>
@@ -98,7 +98,7 @@
             columns: [
                 { data: 'no_transaksi', name: 'no_transaksi' },
                 { data: 'tgl_bln_thn', name: 'tgl_bln_thn' },
-                { data: 'max_model', name: 'max_model' },
+                { data: 'part_number', name: 'part_number' },
                 { data: 'lot_number', name: 'lot_number' },
                 { data: 'qty', name: 'qty' },
                 {
@@ -129,7 +129,7 @@
                 $('#editId').val(data.id);
                 $('#editNoTransaksi').val(data.no_transaksi);
                 $('#editTanggal').val(data.tgl_bln_thn);
-                $('#editModel').val(data.max_model);
+                $('#editModel').val(data.part_number);
                 $('#editLotNumber').val(data.lot_number);
                 $('#editQty').val(data.qty);
                 $('#editModal').modal('show');

@@ -5,15 +5,23 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class M_Model extends Model
+class RecordRch extends Model
 {
     use HasFactory;
 
-    protected $table = 'master_model';
+    protected $table = 'record_receh';
     protected $primaryKey = 'id';
     protected $fillable = [
+        'no_transaksi', 
+        'tgl_bln_thn', 
         'model',
         'plant_dest', 
-        'pic'
+        'lot_number', 
+        'tipe_delv', 
+        'pic',
+        'qty_receh',
+        'flag'
     ];
+
+    public $timestamps = false; 
 }

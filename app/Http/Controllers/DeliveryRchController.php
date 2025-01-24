@@ -6,13 +6,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Record;
 use App\Models\M_Qty;
+use App\Models\M_Serial;
 use App\Models\M_Qty_pcs;
+use App\Models\RecordRch;
+use App\Models\DeliveryRch;
 use App\Models\Delivery;
+use App\Models\RecordSmpn;
 use Yajra\DataTables\DataTables;
 
 use Exception;
 
-class DeliveryController extends Controller
+class DeliveryRchController extends Controller
 {
     public function index()
     {
@@ -37,10 +41,98 @@ class DeliveryController extends Controller
         
         $qtyPcs = M_Qty_pcs::where('no_transaksi', $noTransaksi)->first()->qty_pcs ?? 0;
     
-        return view('data.delivery', compact('noTransaksi', 'tglBlnThn', 'plantDest', 'model', 'qty', 'pic','totalQtyValue','totalQtyValueRcrd','qtyPcs'));
+        return view('data.deliveryrch', compact('noTransaksi', 'tglBlnThn', 'plantDest', 'model', 'qty', 'pic','totalQtyValue','totalQtyValueRcrd','qtyPcs'));
+    }
+
+    public function createreceh()
+    {
+        $noTransaksi = session('no_transaksi');
+        $tglBlnThn = session('tgl_bln_thn');
+        $plantDest = session('plant_dest');
+        $tipeDelv = session('tipe_delv');
+        $model = session('model');
+        $qty = session('qty');
+        $pic = session('pic');
+
+        $totalQty = DeliveryRch::where('no_transaksi', $noTransaksi)->first();
+        $totalQtyValue = $totalQty ? $totalQty->qty : 0;
+
+        $totalQtyRcrd = RecordRch::where('no_transaksi', $noTransaksi)->first();
+        $totalQtyValueRcrd = $totalQtyRcrd ? $totalQtyRcrd->qty_receh : 0;
+        
+        $qtyPcs = M_Qty_pcs::where('no_transaksi', $noTransaksi)->first()->lot_number ?? 0;
+        $RecordSmpn = RecordSmpn::where('no_transaksi', $noTransaksi)->first()->lot_number;
+    
+        return view('data.deliveryreceh', compact('noTransaksi', 'tglBlnThn', 'plantDest', 'model', 'qty', 'pic','totalQtyValue','totalQtyValueRcrd','qtyPcs','RecordSmpn'));
     }
     
     public function store(Request $request)
+    {
+        try {
+            $noTransaksi = $request->input('no_transaksi');
+            $lotNumber = $request->input('lot_number');
+            $qty = $request->input('qty');
+
+            $isDuplicateNotransaksi = RecordSmpn::where('no_transaksi', $noTransaksi)->exists();
+            if ($isDuplicateNotransaksi) {
+                return response()->json(['success' => false, 'message' => 'No Transaksi already exists in Delivery.'], 400);
+            }
+
+            // Check if lot_number exists in Delivery model
+            $isDuplicateInDelivery = Delivery::where('lot_number', $lotNumber)->exists();
+            if ($isDuplicateInDelivery) {
+                return response()->json(['success' => false, 'message' => 'Lot number already exists in Delivery.'], 400);
+            }
+
+            // Check if lot_number exists in RecordSmpn model and if qty is smaller than session qty_receh
+            $isExistInRecordSmpn = RecordSmpn::where('lot_number', $lotNumber)->exists();
+            $qtyReceh = session('qty_receh', 0); // Get qty_receh from session
+            if ($isExistInRecordSmpn && $qty < $qtyReceh) {
+                return response()->json(['success' => false, 'message' => 'Quantity is smaller than session qty_receh.'], 400);
+            }
+
+            // Scan data validation
+            $qrData = $request->input('qrcode');
+            $dataArray = explode('|', $qrData);
+            if (count($dataArray) < 4) {
+                return response()->json(['success' => false, 'message' => 'Invalid QR data format!'], 400);
+            }
+
+            $noTransaksi = $request->input('no_transaksi') ?? 'RCH' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
+
+            $partNumbersInSession = session('part_numbers',[]);
+                $scannedPartNumbers = $dataArray[0];
+
+                if (!in_array($scannedPartNumbers,$partNumbersInSession)){
+                    return response()->json(['success' => false, 'message' => 'Part Number tidak sesuai'], 400);
+                }
+
+            // After validation, save the data in RecordSmpn model instead of Delivery
+            $validatedData = [
+                'no_transaksi' => $noTransaksi,
+                'tgl_bln_thn' => now(),
+                'model' => session('model'),
+                'qty' => $dataArray[2],
+                'lot_number' => $dataArray[3],
+                'flag' => 1,
+                'plant_dest' => session('plant_dest'),
+                'tipe_delv' => session('tipe_delv'),
+                'pic' => session('pic'),
+            ];
+
+            // Create a new record in RecordSmpn
+            $record = new RecordSmpn($validatedData);
+            if ($record->save()) {
+                return response()->json(['success' => true, 'message' => 'Data successfully saved.']);
+            } else {
+                return response()->json(['success' => false, 'message' => 'Failed to save data'], 500);
+            }
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function storereceh(Request $request)
     {
         try {
             $noTransaksi = $request->input('no_transaksi');
@@ -48,7 +140,7 @@ class DeliveryController extends Controller
                 return response()->json(['success' => false, 'message' => 'No transaksi tidak ditemukan atau tidak valid!'], 400);
             }
 
-            $totalQtyRcrd = Record::where('no_transaksi', $noTransaksi)->first();
+            $totalQtyRcrd = RecordRch::where('no_transaksi', $noTransaksi)->first();
             $totalQtyValueRcrd = $totalQtyRcrd ? $totalQtyRcrd->qty : 0;
     
             $totalQty = M_Qty::where('no_transaksi', $noTransaksi)->first();
@@ -70,13 +162,6 @@ class DeliveryController extends Controller
             if (count($dataArray) < 4) {
                 return response()->json(['success' => false, 'message' => 'Format data salah!'], 400);
             }
-
-            $partNumbersInSession = session('part_numbers',[]);
-            $scannedPartNumbers = $dataArray[0];
-
-            if (!in_array($scannedPartNumbers,$partNumbersInSession)){
-                return response()->json(['success' => false, 'message' => 'Part Number tidak sesuai'], 400);
-            }
     
             $validatedData = [
                 'tgl_bln_thn' => now(),
@@ -84,9 +169,9 @@ class DeliveryController extends Controller
                 'qty' => $dataArray[2],
             ];
     
-            $noTransaksi = $request->input('no_transaksi') ?? 'AVI' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
+            $noTransaksi = $request->input('no_transaksi') ?? 'RCH' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
     
-            $record = new Delivery([
+            $record = new DeliveryRch([
                 'no_transaksi' => $noTransaksi,
                 'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
                 'part_number' => $validatedData['model'],
@@ -95,10 +180,12 @@ class DeliveryController extends Controller
                 'qty' => $validatedData['qty'],
             ]);
 
+
+
             $partNumber = $validatedData['model'];
             $lotNumber = $dataArray[3];
     
-            $isDuplicate = Delivery::where('part_number', $partNumber)
+            $isDuplicate = DeliveryRch::where('part_number', $partNumber)
                 ->where('lot_number', $lotNumber)
                 ->exists();
     
@@ -108,7 +195,7 @@ class DeliveryController extends Controller
     
             if ($record->save()) {
 
-                $totalQty = DB::table('delivery')
+                $totalQty = DB::table('delivery_receh')
                     ->where('no_transaksi', $noTransaksi)
                     ->sum('qty');
 
@@ -134,7 +221,8 @@ class DeliveryController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
-    
+
+
     // old function
     // public function store(Request $request)
     // {

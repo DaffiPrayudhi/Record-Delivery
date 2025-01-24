@@ -17,10 +17,11 @@
                         <th>Tanggal</th>
                         <th>Model</th>
                         <th>Part Number</th> 
+                        <th>Lot Number</th> 
                         <th>Plant Destination</th>
                         <th>Tipe Delivery</th> 
                         <th>PIC</th>
-                        <th>Quantity Record</th>
+                        <th>Quantity Receh</th>
                         <th>Quantity Delivery</th>
                     </tr>
                 </thead>
@@ -37,6 +38,7 @@
                                 <p></p>
                             @endif
                         </td>
+                        <td>{{ $RecordSmpn }}</td>
                         <td>{{ session('plant_dest') }}</td>
                         <td>{{ session('tipe_delv') }}</td>
                         <td>{{ session('pic') }}</td>
@@ -197,7 +199,7 @@ $(document).ready(function() {
                 formData.append('lot_number', dataArray[3]);
                 formData.append('flag', 1);
 
-                fetch("{{ route('delivery.store') }}", {
+                fetch("{{ route('delivery.storereceh') }}", {
                     method: "POST",
                     body: formData,
                 })

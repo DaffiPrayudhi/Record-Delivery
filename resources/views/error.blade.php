@@ -14,7 +14,7 @@
         body {
             background-color: #2c3e50; 
             color: white; 
-            font-family: 'Arial', sans-serif;
+            font-family: 'Calibri', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;

@@ -14,7 +14,7 @@ class Delivery extends Model
     protected $fillable = [
         'no_transaksi', 
         'tgl_bln_thn', 
-        'max_model',
+        'part_number',
         'lot_number', 
         'qty',
         'flag'
