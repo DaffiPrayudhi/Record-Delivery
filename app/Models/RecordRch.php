@@ -14,6 +14,7 @@ class RecordRch extends Model
     protected $fillable = [
         'no_transaksi', 
         'tgl_bln_thn', 
+        'tgl_bln_thn_dlv', 
         'model',
         'plant_dest', 
         'lot_number', 

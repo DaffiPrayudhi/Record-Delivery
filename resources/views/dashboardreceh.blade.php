@@ -12,7 +12,7 @@
         <div class="row">
             <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center">
-                <h4 class="mb-sm-0 font-size-18 me-3">Record Delivery</h4>
+                <h4 class="mb-sm-0 font-size-18 me-3">Record Delivery Receh</h4> 
                 <div class="dropdown">
                     <button class="btn btn-secondary btn-smsa dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fa fa-caret-down"></i>
@@ -23,7 +23,7 @@
                     </ul>
                 </div>
 
-                <div class="page-title-right ms-auto">
+                <div class="page-title-right ms-auto"> 
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a href="javascript: void(0);">Dashboard</a></li>
                         <li class="breadcrumb-item active">Record Delivery</li>
@@ -72,6 +72,7 @@
                                     <th>Model</th>
                                     <th>Part Name</th>
                                     <th>Part Number</th>
+                                    <th>Serial Number</th>
                                     <th>Lot Number</th>
                                     <th>Tipe Delivery</th>
                                     <th>Plant Destination</th>
@@ -103,7 +104,7 @@
         color: #fff; 
         background-color: #2088ef;
     }
-
+    
     .btn-smsa {
         background-color: #f4f5f8;
         color: #000;
@@ -117,7 +118,6 @@
         color: #000; 
         box-shadow: none;
     }
-
 </style>
 @endsection
 
@@ -129,7 +129,7 @@
            processing: true,
            serverSide: true,
            ajax: {
-               url: '{{ route('getrecord.data') }}',
+               url: '{{ route('getrecord.datarch') }}',
                type: 'GET'
            },
            columns: [
@@ -141,7 +141,7 @@
                { data: 'part_number', name: 'part_number' },
                { data: 'tipe_delv', name: 'tipe_delv' },
                { data: 'plant_dest', name: 'plant_dest' },
-               { data: 'qty', name: 'qty' },
+               { data: 'qty_receh', name: 'qty_receh' },
                { 
                    data: 'status', 
                    name: 'status',
@@ -161,7 +161,9 @@
            info: false,
            pageLength: 5,
            lengthMenu: [5, 10, 25, 50],
-           lengthChange: false
+           lengthChange: false,
+           responsive: true,
+           order: [[1, 'desc']]
        });
    });
 </script>
@@ -172,7 +174,7 @@
         processing: true,
         serverSide: true,
         ajax: {
-            url: '{{ route('getspareparts.data') }}',
+            url: '{{ route('getspareparts.datarch') }}',
             type: 'GET'
         },
         columns: [
@@ -181,6 +183,7 @@
             { data: 'model', name: 'model'}, 
             { data: 'part_name', name: 'part_name'},         
             { data: 'part_number', name: 'part_number'},     
+            { data: 'serial_number', name: 'serial_number'},     
             { data: 'lot_number', name: 'lot_number'},       
             { data: 'tipe_delv', name: 'tipe_delv'},       
             { data: 'plant_dest', name: 'plant_dest'},    
@@ -192,7 +195,9 @@
         info: false,
         pageLength: 5,
         lengthMenu: [5, 10, 25, 50],
-        lengthChange: false
+        lengthChange: false,
+        responsive: true,
+        order: [[1, 'desc']]
     });
 });
 </script>

@@ -158,9 +158,8 @@ $(document).ready(function() {
         const formElement = document.getElementById('dataForm');
         const inputElement = document.getElementById('qrcode');
         const notificationElement = document.getElementById('notification');
-        let errorSoundLoop;
         let isErrorSoundPlaying = false;
-
+        
         formElement.addEventListener('submit', function(e) {
             e.preventDefault();
             const qrData = inputElement.value.trim();
@@ -186,8 +185,7 @@ $(document).ready(function() {
                 .then(data => {
                     if (data.success) {
                         displayNotification('Data berhasil disimpan!', 'success');
-                        playNotificationSound('success');
-                        stopErrorSound(); 
+                        playSuccessSound(); 
                         inputElement.value = ""; 
                         table.ajax.reload();
                         updateQuantityDelivery();
@@ -198,7 +196,7 @@ $(document).ready(function() {
                 })
                 .catch(error => {
                     displayNotification('Terjadi kesalahan: ' + error.message, 'danger');
-                    playNotificationSound('error');
+                    playErrorSound();
                 });
             } else {
                 handleErrorPopup('Format data QR Code tidak valid.');
@@ -206,36 +204,14 @@ $(document).ready(function() {
             }
         }
 
-    function handleErrorPopup(message) {
+        function handleErrorPopup(message) {
             stopErrorSound();
             if (!isErrorSoundPlaying) {
-                playNotificationSound('error'); 
+                playErrorSound();
                 isErrorSoundPlaying = true; 
             }
 
-            if (message === 'Format data salah!') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: 'Format data salah!',
-                    confirmButtonText: 'OK',
-                    showConfirmButton: true
-                }).then(() => {
-                    stopErrorSound(); 
-                    isErrorSoundPlaying = false; 
-                });
-            } else if (message === 'Tidak dapat menginput data melebihi quantity.') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: message,
-                    confirmButtonText: 'OK',
-                    showConfirmButton: true
-                }).then(() => {
-                    stopErrorSound(); 
-                    isErrorSoundPlaying = false;
-                });
-            } else if (message === 'Quantity tidak dapat melebihi quantity record') {
+            if (message === 'Format data salah!' || message === 'Tidak dapat menginput data melebihi quantity.' || message === 'Quantity tidak dapat melebihi quantity record') {
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
@@ -269,7 +245,7 @@ $(document).ready(function() {
         if (localStorage.getItem('showPasswordError')) {
             showPasswordProtectedPopup("Masukkan Password terlebih dahulu");
             if (!isErrorSoundPlaying) {  
-                playNotificationSound('error');
+                playErrorSound();
                 isErrorSoundPlaying = true; 
             }
         }
@@ -305,7 +281,7 @@ $(document).ready(function() {
                     .catch(error => {
                         Swal.showValidationMessage(error.message);
                         if (!isErrorSoundPlaying) {
-                            playNotificationSound('error');
+                            playErrorSound();
                             isErrorSoundPlaying = true;
                         }
                     });
@@ -319,14 +295,15 @@ $(document).ready(function() {
                 }
             }).catch(error => {
                 Swal.showValidationMessage(error.message);
+            }).finally(() => {
+                isErrorSoundPlaying = false;  
             });
         }
 
+
         function stopErrorSound() {
-            if (errorSoundLoop) {
-                errorSoundLoop = false; 
-            }
             isErrorSoundPlaying = false; 
+            Howler.stop(); 
         }
 
         function updateQuantityDelivery() {
@@ -355,43 +332,32 @@ $(document).ready(function() {
             }, 10000);
         }
 
-        function playNotificationSound(type) {
-        const context = new (window.AudioContext || window.webkitAudioContext)();
-        let oscillator = context.createOscillator();
-        let gainNode = context.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(context.destination);
-
-        if (type === 'success') {
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(780, context.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(1760, context.currentTime + 0.3);
-        } else if (type === 'error') {
-            oscillator.type = 'triangle';
-            oscillator.frequency.setValueAtTime(220, context.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(110, context.currentTime + 0.3);
+        function playSuccessSound() {
+            const sound = new Howl({
+                src: ['/B/assets/audio/sukses.wav'],
+                volume: 1,
+                loop: false,
+                onend: function() {
+                    isErrorSoundPlaying = false;
+                }
+            });
+            sound.play();
         }
 
-        gainNode.gain.setValueAtTime(0, context.currentTime);
-        gainNode.gain.linearRampToValueAtTime(1, context.currentTime + 0.1);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.5);
-
-        oscillator.start();
-        
-        errorSoundLoop = true;
-        setTimeout(() => {
-            if (errorSoundLoop) {
-                playNotificationSound('error'); 
-            }
-        }, 1000);
-
-        setTimeout(() => oscillator.stop(), 1000);
-    }
+        function playErrorSound() {
+            const sound = new Howl({
+                src: ['/B/assets/audio/error.wav'],
+                volume: 1,
+                loop: true,
+                onend: function() {
+                    isErrorSoundPlaying = false;
+                }
+            });
+            sound.play();
+            isErrorSoundPlaying = true;
+        }
     });
 </script>
-
-<script src="https://cdn.jsdelivr.net/npm/howler"></script>
 
 <script>
     function resetForm() {
@@ -402,6 +368,8 @@ $(document).ready(function() {
         document.getElementById('delivery-table').style.display = 'none';
     }
 
+    let errorSoundLoop = null;
+
     function compareQty() {
         fetch("{{ route('delivery.compare') }}", {
             method: 'POST',
@@ -409,7 +377,7 @@ $(document).ready(function() {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
-            body: JSON.stringify({})
+            body: JSON.stringify({}) 
         })
         .then(response => response.json())
         .then(data => {
@@ -423,17 +391,18 @@ $(document).ready(function() {
                 }).then(() => {
                     window.location.href = "{{ route('record.create') }}"; 
                 });
-                playNotificationSound('success');
+                playSuccessSound();
             } else {
                 Swal.fire({
                     title: 'Error!',
                     text: data.message,
                     icon: 'error',
                     confirmButtonText: 'OK',
-                    showConfirmButton: true,
-                    timer: 5000 
+                    showConfirmButton: true
+                }).then(() => {
+                    stopErrorSound();
                 });
-                playNotificationSound('error');
+                playErrorSound();
             }
         })
         .catch(error => {
@@ -443,40 +412,54 @@ $(document).ready(function() {
                 text: 'Gagal membandingkan data.',
                 icon: 'error',
                 confirmButtonText: 'OK'
+            }).then(() => {
+                stopErrorSound();
             });
-            playNotificationSound('error');
+            playErrorSound();
         });
     }
 
-    function playNotificationSound(type) {
-        const context = new (window.AudioContext || window.webkitAudioContext)();
-        let oscillator = context.createOscillator();
-        let gainNode = context.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(context.destination);
-
-        if (type === 'success') {
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(780, context.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(1760, context.currentTime + 0.3);
-        } else if (type === 'error') {
-            oscillator.type = 'triangle';
-            oscillator.frequency.setValueAtTime(220, context.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(110, context.currentTime + 0.3);
-        } else if (type === 'warning') {
-            oscillator.type = 'square';
-            oscillator.frequency.setValueAtTime(440, context.currentTime);
-            setTimeout(() => oscillator.frequency.setValueAtTime(660, context.currentTime + 0.2), 200);
-        }
-
-        gainNode.gain.setValueAtTime(0, context.currentTime);
-        gainNode.gain.linearRampToValueAtTime(1, context.currentTime + 0.1);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.5);
-
-        oscillator.start();
-        setTimeout(() => oscillator.stop(), 2000); 
+    function playSuccessSound() {
+        const sound = new Howl({
+            src: ['/B/assets/audio/sukses.wav'],
+            volume: 1,
+            loop: false,
+            onend: function() {
+                isErrorSoundPlaying = false;
+            }
+        });
+        sound.play();
     }
+
+    function playErrorSound() {
+        if (errorSoundLoop) {
+            stopErrorSound();
+        }
+        errorSoundLoop = new Howl({
+            src: ['/B/assets/audio/error.wav'],
+            volume: 1,
+            loop: true,
+            onend: function() {
+                isErrorSoundPlaying = false;
+            }
+        });
+        errorSoundLoop.play();
+        isErrorSoundPlaying = true;
+    }
+
+    function stopErrorSound() {
+        if (errorSoundLoop) {
+            errorSoundLoop.stop();
+            errorSoundLoop = null; 
+        }
+    }
+
+    document.addEventListener('click', function(event) {
+        const swalPopup = document.querySelector('.swal2-container');
+        if (!swalPopup.contains(event.target)) {
+            stopErrorSound();  
+        }
+    });
 </script>
 
 <!-- <script>

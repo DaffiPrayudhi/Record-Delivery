@@ -33,6 +33,7 @@ class RecordController extends Controller
                         ->whereNotNull('tipe_delv')
                         ->distinct()
                         ->pluck('tipe_delv');  
+        
 
         $picx = ['Iqbal', 'Nauval', 'Dandi', 'Bayu F', 'Eko', 'Putut'];
         
@@ -191,6 +192,7 @@ class RecordController extends Controller
         return response()->json($plant_dests);
     }
 
+    
 
 
 }

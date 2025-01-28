@@ -79,13 +79,56 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/howler"></script>
 <script>
+    let errorSoundInstance;
+    let isErrorSoundPlaying = false;
+
+    function stopErrorSound() {
+        if (errorSoundInstance) {
+            errorSoundInstance.stop();
+            isErrorSoundPlaying = false;
+        }
+    }
+
+    function playNotificationSound(type) {
+        
+        const successSound = '{{ asset('B/assets/audio/sukses.wav') }}'; 
+        const errorSound = '{{ asset('B/assets/audio/error.wav') }}';  
+
+        if (type === 'success') {
+            const successSoundInstance = new Howl({
+                src: [successSound],
+                loop: false, 
+                volume: 1.0,
+                onend: function() {
+                    console.log('Success sound finished');
+                }
+            });
+            successSoundInstance.play();
+        } else if (type === 'error') {
+            if (errorSoundInstance) {
+                errorSoundInstance.stop();
+            }
+
+            errorSoundInstance = new Howl({
+                src: [errorSound],
+                loop: true, 
+                volume: 1.0,
+                onend: function() {
+                    console.log('Error sound finished');
+                }
+            });
+
+            errorSoundInstance.play();
+            isErrorSoundPlaying = true;
+        }
+    }
+
     $(document).ready(function() {
         const formElement = document.getElementById('dataForm');
         const inputElement = document.getElementById('qrcode');
         const notificationElement = document.getElementById('notification');
-        let errorSoundLoop;
-        let isErrorSoundPlaying = false;
 
         formElement.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -95,7 +138,6 @@
 
         function processQRData(qrData) {
             const dataArray = qrData.split('|');
-
 
             if (dataArray.length >= 4) {
                 const formData = new FormData(document.getElementById('dataForm'));
@@ -130,68 +172,25 @@
                 handleErrorPopup('Format data QR Code tidak valid.');
                 inputElement.value = "";
             }
-            dd(dataArray);
         }
 
-    function handleErrorPopup(message) {
+        function handleErrorPopup(message) {
             stopErrorSound();
             if (!isErrorSoundPlaying) {
-                playNotificationSound('error'); 
-                isErrorSoundPlaying = true; 
+                playNotificationSound('error');
+                isErrorSoundPlaying = true;
             }
 
-            if (message === 'Format data salah!') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: 'Format data salah!',
-                    confirmButtonText: 'OK',
-                    showConfirmButton: true
-                }).then(() => {
-                    stopErrorSound(); 
-                    isErrorSoundPlaying = false; 
-                });
-            } else if (message === 'Tidak dapat menginput data melebihi quantity.') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: message,
-                    confirmButtonText: 'OK',
-                    showConfirmButton: true
-                }).then(() => {
-                    stopErrorSound(); 
-                    isErrorSoundPlaying = false;
-                });
-            } else if (message === 'Part Number tidak sesuai') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: message,
-                    confirmButtonText: 'OK',
-                    showConfirmButton: true
-                }).then(() => {
-                    stopErrorSound(); 
-                    isErrorSoundPlaying = false;
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: message,
-                    confirmButtonText: 'OK',
-                    showConfirmButton: true
-                }).then(() => {
-                    stopErrorSound(); 
-                    isErrorSoundPlaying = false;
-                });
-            }
-        }
-
-        function stopErrorSound() {
-            if (errorSoundLoop) {
-                errorSoundLoop = false; 
-            }
-            isErrorSoundPlaying = false; 
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: message,
+                confirmButtonText: 'OK',
+                showConfirmButton: true
+            }).then(() => {
+                stopErrorSound();
+                isErrorSoundPlaying = false;
+            });
         }
 
         function displayNotification(message, type) {
@@ -203,40 +202,6 @@
                 notificationElement.style.display = 'none';
             }, 10000);
         }
-
-        function playNotificationSound(type) {
-        const context = new (window.AudioContext || window.webkitAudioContext)();
-        let oscillator = context.createOscillator();
-        let gainNode = context.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(context.destination);
-
-        if (type === 'success') {
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(780, context.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(1760, context.currentTime + 0.3);
-        } else if (type === 'error') {
-            oscillator.type = 'triangle';
-            oscillator.frequency.setValueAtTime(220, context.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(110, context.currentTime + 0.3);
-        }
-
-        gainNode.gain.setValueAtTime(0, context.currentTime);
-        gainNode.gain.linearRampToValueAtTime(1, context.currentTime + 0.1);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.5);
-
-        oscillator.start();
-        
-        errorSoundLoop = true;
-        setTimeout(() => {
-            if (errorSoundLoop) {
-                playNotificationSound('error'); 
-            }
-        }, 1000);
-
-        setTimeout(() => oscillator.stop(), 1000);
-    }
     });
 </script>
 

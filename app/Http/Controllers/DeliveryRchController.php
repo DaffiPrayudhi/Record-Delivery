@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
 use App\Models\Record;
 use App\Models\M_Qty;
 use App\Models\M_Model_Part;
@@ -52,13 +53,13 @@ class DeliveryRchController extends Controller
         $qty = session('qty');
         $pic = session('pic');
 
-        $totalQty = DeliveryRch::where('no_transaksi', $noTransaksi)->first();
-        $totalQtyValue = $totalQty ? $totalQty->qty : 0;
+        $totalQty = M_Qty::where('no_transaksi', $noTransaksi)->first();
+        $totalQtyValue = $totalQty ? $totalQty->total_qty : 0;
 
         $totalQtyRcrd = RecordRch::where('no_transaksi', $noTransaksi)->first();
         $totalQtyValueRcrd = $totalQtyRcrd ? $totalQtyRcrd->qty_receh : 0;
         
-        $RecordSmpn = RecordRch::where('no_transaksi', $noTransaksi)->first()->lot_number ?? '-';
+        $RecordSmpn = RecordRch::where('no_transaksi', $noTransaksi)->first()->lot_number ?? '';
     
         return view('data.deliveryreceh', compact('noTransaksi', 'tglBlnThn', 'plantDest', 'model', 'qty', 'pic','totalQtyValue','totalQtyValueRcrd','RecordSmpn'));
     }
@@ -68,136 +69,173 @@ class DeliveryRchController extends Controller
         try {
             $lotNumber = $request->input('lot_number');
             $qty = (int)$request->input('qty');
-    
-            $isDuplicateInDelivery = Delivery::where('lot_number', $lotNumber)->exists();
-            if ($isDuplicateInDelivery) {
+            $sessionModel = session('model');
+            $qtyReceh = session('qty_receh');
+            $pic = session('pic');
+
+            if (Delivery::where('lot_number', $lotNumber)->exists()) {
                 return response()->json(['success' => false, 'message' => 'Lot number sudah ada dalam database.'], 400);
             }
-    
-            $recordSmpn = RecordSmpn::where('lot_number', $lotNumber)->first();
+
+            $qrData = $request->input('qrcode');
+            $dataArray = explode('|', $qrData);
+                if (count($dataArray) < 4) {
+                    return response()->json(['success' => false, 'message' => 'Format data salah!'], 400);
+                }
+
+            $partNumbersInSession = session('part_numbers', []);
+            $scannedPartNumbers = $dataArray[0];
+
+                if (!in_array($scannedPartNumbers, $partNumbersInSession)) {
+                    return response()->json(['success' => false, 'message' => 'Part Number tidak sesuai'], 400);
+                }
+
+            $recordSmpn = RecordSmpn::where('lot_number', $lotNumber)
+                ->where('model', $sessionModel) 
+                ->first();
+
             if ($recordSmpn) {
-                if (session('qty_receh') > (int)$recordSmpn->qty) {
+                if ($recordSmpn->qty < $qtyReceh) {
                     return response()->json([
                         'success' => false,
-                        'message' => "Quantity dalam db lebih kecil dibanding quantity receh"
+                        'message' => "Quantity dalam database lebih kecil dibanding quantity receh"
                     ], 400);
                 }
-    
-                $recordSmpn->update([
-                    'tgl_bln_thn' => now(),
-                    'pic' => session('pic'),
-                ]);
-            } else {
-                if ($qty < session('qty_receh')) {
+
+                if ($qty >= $qtyReceh) {
+                    $recordSmpn->update([
+                        'tgl_bln_thn' => now(),
+                        'pic' => $pic,
+                    ]);
+                    return response()->json(['success' => true, 'message' => 'Data berhasil diperbarui.']);
+                } else {
                     return response()->json([
                         'success' => false,
                         'message' => 'Quantity tidak boleh lebih kecil dari quantity receh'
                     ], 400);
                 }
-    
-                $qrData = $request->input('qrcode');
-                $dataArray = explode('|', $qrData);
-                if (count($dataArray) < 4) {
-                    return response()->json(['success' => false, 'message' => 'Invalid QR data format!'], 400);
+            } else {
+                if ($qty < $qtyReceh) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Quantity tidak boleh lebih kecil dari quantity receh'
+                    ], 400);
                 }
-    
-                $partNumbersInSession = session('part_numbers', []);
-                $scannedPartNumbers = $dataArray[0];
-    
-                if (!in_array($scannedPartNumbers, $partNumbersInSession)) {
-                    return response()->json(['success' => false, 'message' => 'Part Number tidak sesuai'], 400);
-                }
-    
+
                 $validatedData = [
                     'tgl_bln_thn' => now(),
-                    'model' => session('model'),
+                    'model' => $sessionModel,
                     'qty' => $dataArray[2],
                     'lot_number' => $dataArray[3],
                     'flag' => 1,
-                    'pic' => session('pic'),
+                    'pic' => $pic,
                 ];
-    
-                $record = new RecordSmpn($validatedData);
-    
-                if (!$record->save()) {
+
+                $newRecord = new RecordSmpn($validatedData);
+                if (!$newRecord->save()) {
                     return response()->json(['success' => false, 'message' => 'Gagal menyimpan data'], 500);
                 }
             }
-    
+
+            // Update data transaksi berdasarkan no_transaksi di session
             $noTransaksi = session('no_transaksi');
             $transaksi = RecordRch::where('no_transaksi', $noTransaksi)->first();
-    
+
             if ($transaksi) {
-                $existingLotNumbers = $transaksi->lot_number ?? '-';
+                $existingLotNumbers = $transaksi->lot_number ?? '';
                 $newLotNumbers = $existingLotNumbers
                     ? $existingLotNumbers . ',' . $lotNumber
                     : $lotNumber;
-    
+
                 $transaksi->update(['lot_number' => $newLotNumbers]);
             }
-    
+
             return response()->json(['success' => true, 'message' => 'Data berhasil disimpan.']);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
-    
+
 
     public function storereceh(Request $request)
     {
-        try {
-            $noTransaksi = $request->input('no_transaksi');
-            if (!$noTransaksi) {
-                return response()->json(['success' => false, 'message' => 'No transaksi tidak ditemukan atau tidak valid!'], 400);
+        $noTransaksi = $request->input('no_transaksi');
+        if (!$noTransaksi) {
+            return response()->json(['success' => false, 'message' => 'No transaksi tidak ditemukan atau tidak valid!'], 400);
+        }
+
+        $totalQtyRcrd = RecordRch::where('no_transaksi', $noTransaksi)->first();
+        $totalQtyValueRcrd = $totalQtyRcrd ? $totalQtyRcrd->qty_receh : 0;
+
+        $totalQty = M_Qty::where('no_transaksi', $noTransaksi)->first();
+        $totalQtyValue = $totalQty ? $totalQty->total_qty : 0;
+
+        if ($totalQtyValue == $totalQtyValueRcrd) {
+            return response()->json(['success' => false, 'message' => 'Tidak dapat menginput data melebihi quantity.'], 400);
+        }
+
+        $model = session('model');
+        $qrcode = $request->input('qrcode');
+        $modelParts = M_Model_Part::where('model', $model)->get();
+        $modelPart = $modelParts->first(function ($part) use ($qrcode) {
+            return strpos($qrcode, $part->serial_number) === 0;
+        });
+
+        $noTransaksi = session('no_transaksi');
+
+        $existingDelivery = DeliveryRch::where('serial_number', $qrcode)->first();
+        if ($existingDelivery) {
+            return response()->json(['success' => false, 'message' => 'Serial number sudah ada dalam database'], 400);
+        }
+
+        $tglBlnThn = now()->toDateString();
+
+        $recordData = RecordRch::whereDate('tgl_bln_thn', $tglBlnThn)
+        ->where('no_transaksi', $noTransaksi)
+        ->get(['no_transaksi','lot_number']);
+
+        $lotNumbers = $recordData->pluck('lot_number')->unique()->first();
+
+        if ($modelPart) {
+            $delivery = new DeliveryRch();
+            $delivery->no_transaksi = $noTransaksi;
+            $delivery->tgl_bln_thn = now()->format('Y-m-d H:i:s');
+            $delivery->part_number = $modelPart->part_number;
+            $delivery->serial_number = $qrcode;
+            $delivery->lot_number = $lotNumbers;
+            $delivery->qty = 1;
+            $delivery->flag = 1;
+            $delivery->save();
+
+            $totalQty = DB::table('delivery_receh')
+                ->where('no_transaksi', $noTransaksi)
+                ->sum('qty');
+
+            $masterQty = M_Qty::where('no_transaksi', $noTransaksi)->first();
+
+            if ($masterQty) {
+                $masterQty->total_qty = $totalQty;
+                $masterQty->flag = 1;
+                $masterQty->save();
+            } else {
+                M_Qty::create([
+                    'no_transaksi' => $noTransaksi,
+                    'total_qty' => $totalQty,
+                    'flag' => 1,
+                ]);
             }
-    
-            $totalQtyRcrd = RecordRch::where('no_transaksi', $noTransaksi)->first();
-            $totalQtyValueRcrd = $totalQtyRcrd ? $totalQtyRcrd->qty_receh : 0;
-    
-            $totalQty = M_Qty::where('no_transaksi', $noTransaksi)->first();
-            $totalQtyValue = $totalQty ? $totalQty->total_qty : 0;
-    
-            $inputQty = $request->input('qty');
-    
-            if ($totalQtyValue == $totalQtyValueRcrd) {
-                return response()->json(['success' => false, 'message' => 'Tidak dapat menginput data melebihi quantity.'], 400);
-            }
-    
-            if (($totalQtyValue + $inputQty) > $totalQtyValueRcrd) {
-                return response()->json(['success' => false, 'message' => 'Quantity tidak dapat melebihi quantity record'], 400);
-            }
-    
-            // Validate QR data (serial_number and model)
-            $serialNumber = $request->input('serial_number');
-            $model = $request->input('model');
-            
-            $masterModelPart = DB::table('master_model_part')
-                ->where('model', $model)
-                ->where('serial_number', $serialNumber)
-                ->first();
-    
-            if (!$masterModelPart) {
-                return response()->json(['success' => false, 'message' => 'Serial number tidak ditemukan untuk model ini.'], 400);
-            }
-    
-            // Save data if validation passed
-            $validatedData = [
-                'tgl_bln_thn' => now(),
-                'model' => $model,
-                'serial_number' => $serialNumber,
-                'qty' => $request->input('qty'),
-            ];
-    
-            // Insert or update record logic (e.g., DeliveryRsc model)
-            DeliveryRch::create($validatedData);
-    
-            return response()->json(['success' => true, 'message' => 'Data berhasil disimpan!']);
-        } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data berhasil disimpan!'
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Serial number tidak sesuai'
+            ]);
         }
     }
-    
-
 
     // old function
     // public function store(Request $request)
@@ -286,14 +324,17 @@ class DeliveryRchController extends Controller
             $noTransaksi = session('no_transaksi');
             $tglBlnThn = now()->toDateString();
 
-            $recordData = Record::whereDate('tgl_bln_thn', $tglBlnThn)
-                ->where('no_transaksi', $noTransaksi)
-                ->get(['no_transaksi', 'model', 'qty']);
+            $recordSmpn = RecordSmpn::whereDate('tgl_bln_thn', $tglBlnThn)
+            ->get(['model', 'qty', 'lot_number']);
 
-            $deliveryData = Delivery::whereDate('tgl_bln_thn', $tglBlnThn)
+            $recordData = RecordRch::whereDate('tgl_bln_thn', $tglBlnThn)
                 ->where('no_transaksi', $noTransaksi)
-                ->selectRaw('no_transaksi, part_number, SUM(qty) as qty')
-                ->groupBy('no_transaksi', 'part_number')
+                ->get(['no_transaksi', 'model', 'qty_receh', 'lot_number']);
+
+            $deliveryData = DeliveryRch::whereDate('tgl_bln_thn', $tglBlnThn)
+                ->where('no_transaksi', $noTransaksi)
+                ->selectRaw('no_transaksi, part_number, lot_number ,SUM(qty) as qty')
+                ->groupBy('no_transaksi', 'part_number', 'lot_number')
                 ->get();
 
             if ($recordData->isEmpty() && $deliveryData->isEmpty()) {
@@ -305,17 +346,23 @@ class DeliveryRchController extends Controller
                 ]);
             }
 
-            $recordQty = $recordData->sum('qty');
+            $recordQty = $recordData->sum('qty_receh');
             $deliveryQty = $deliveryData->sum('qty');
 
             $message = '';
             $status = false;
 
             if ($recordQty === $deliveryQty) {
-                Record::whereDate('tgl_bln_thn', $tglBlnThn)->where('flag', 1)->update(['flag' => 0]);
-                Delivery::whereDate('tgl_bln_thn', $tglBlnThn)->where('flag', 1)->update(['flag' => 0]);
+                RecordRch::whereDate('tgl_bln_thn', $tglBlnThn)->where('flag', 1)->update(['flag' => 0]);
+                DeliveryRch::whereDate('tgl_bln_thn', $tglBlnThn)->where('flag', 1)->update(['flag' => 0]);
 
                 M_Qty::where('no_transaksi', $noTransaksi)->update(['flag' => 0]);
+
+                $lotNumbers = $recordData->pluck('lot_number')->unique();
+
+                RecordSmpn::whereIn('lot_number', $lotNumbers)->update(['flag' => 0]);
+                
+                $this->reduceQtyBasedOnLotNumber($recordSmpn, $deliveryData, $noTransaksi);
 
                 $message = 'Data cocok, berhasil mengupdate data.';
                 $status = true;
@@ -337,11 +384,26 @@ class DeliveryRchController extends Controller
         }
     }
 
-    public function getDeliveryData(Request $request)
+    private function reduceQtyBasedOnLotNumber($recordSmpn, $deliveryData, $noTransaksi)
+    {
+        foreach ($recordSmpn as $record) {
+            $matchingDelivery = $deliveryData->where('lot_number', $record->lot_number)->first();
+
+            if ($matchingDelivery) {
+                $newQty = $record->qty - $matchingDelivery->qty;
+                if ($newQty >= 0) {
+                    RecordSmpn::where('lot_number', $record->lot_number)
+                        ->update(['qty' => $newQty]);
+                }
+            }
+        }
+    }
+
+    public function getDeliveryDataRch(Request $request)
     {
         $noTransaksi = session('no_transaksi'); 
     
-        $deliveries = Delivery::where('no_transaksi', $noTransaksi)
+        $deliveries = DeliveryRch::where('no_transaksi', $noTransaksi)
             ->orderBy('tgl_bln_thn', 'desc') 
             ->get();
     
@@ -360,7 +422,7 @@ class DeliveryRchController extends Controller
         ]);
     }
 
-    public function verifyPassword(Request $request)
+    public function verifyPasswordRch(Request $request)
     {
         $password = $request->input('password');
         if ($password === 'warehouse021') {

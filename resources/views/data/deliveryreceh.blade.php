@@ -112,7 +112,7 @@
                                         <th>No</th>
                                         <th>Tanggal</th>
                                         <th>Part Number</th>
-                                        <th>Lot Number</th>
+                                        <th>Serial Number</th>
                                         <th>Qty</th>
                                     </tr>
                                 </thead>
@@ -120,8 +120,7 @@
                                     <!-- javascript -->
                                 </tbody>
                             </table>
-                        </div>
-                
+                        </div>         
                     </div>
                 </div>
             </div>
@@ -130,16 +129,16 @@
 </div>
 
 <script>
-$(document).ready(function() {
+$(document).ready(function () {
     var table = $('#deliveryTable').DataTable({
         processing: true,
         serverSide: true,
-        ajax: '{{ route('delivery.data') }}',
+        ajax: '{{ route('delivery.datareceh') }}',
         columns: [
             { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
             { data: 'tgl_bln_thn', name: 'tgl_bln_thn' },
             { data: 'part_number', name: 'part_number' },
-            { data: 'lot_number', name: 'lot_number' },
+            { data: 'serial_number', name: 'serial_number' },
             { data: 'qty', name: 'qty' }
         ],
         order: [[1, 'desc']],
@@ -152,244 +151,196 @@ $(document).ready(function() {
         lengthMenu: [5, 10, 25, 50],
         lengthChange: false
     });
-});
-</script>
 
-<script>
-    $(document).ready(function() {
-        const table = $('#deliveryTable').DataTable();
-        const formElement = document.getElementById('dataForm');
-        const inputElement = document.getElementById('qrcode');
-        const notificationElement = document.getElementById('notification');
-        let errorSoundLoop;
-        let isErrorSoundPlaying = false;
+    let errorSoundLoop = false;
+    let errorSoundInstance = null;
 
-        formElement.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const qrData = inputElement.value.trim();
-            processQRData(qrData);
-        });
+    document.getElementById('dataForm').addEventListener('submit', function (e) {
+        e.preventDefault();
 
-        function processQRData(qrData) {
-        // Validate the QR code format
-        const serialNumber = qrData.trim();  // Assume the data is just the serial number (no delimiter needed)
-        const model = "{{ session('model') }}";  // Get the model from the session
+        var qrcode = document.getElementById('qrcode').value;
 
-        if (serialNumber) {
-            const formData = new FormData();
-            formData.append('serial_number', serialNumber);
-            formData.append('model', model);
-            formData.append('qty', 1);  // Add the quantity to be 1 for each valid scan
-            formData.append('tgl_bln_thn', new Date().toISOString().slice(0, 19).replace('T', ' '));
-
-            fetch("{{ route('delivery.storereceh') }}", {
-                method: "POST",
-                body: formData,
+        fetch("{{ route('delivery.storereceh') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': "{{ csrf_token() }}"
+            },
+            body: JSON.stringify({
+                qrcode: qrcode,
+                no_transaksi: document.querySelector('input[name="no_transaksi"]').value
             })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) { 
+                displayNotification(data.message, 'success');
+                playNotificationSound('success');
+                table.ajax.reload();
+                updateQuantityDelivery();
+            } else {
+                handleErrorPopup(data.message);
+            }
+            document.getElementById('qrcode').value = '';
+            document.getElementById('qrcode').focus();
+        })
+        .catch(error => {
+            handleErrorPopup('Terjadi kesalahan saat memproses data.');
+            document.getElementById('qrcode').value = '';
+            document.getElementById('qrcode').focus();
+        });
+    });
+
+    function updateQuantityDelivery() {
+        const noTransaksi = "{{ session('no_transaksi') }}";
+
+        fetch(`/delivery/${noTransaksi}/total-qty`)
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    displayNotification('Data berhasil disimpan!', 'success');
-                    inputElement.value = "";
-                    updateQuantityDelivery();
-                } else {
-                    handleErrorPopup(data.message);
+                const totalQty = data.total_qty;
+                const qtyColumn = document.querySelector('td.text-danger, td.text-success');
+                if (qtyColumn) {
+                    qtyColumn.textContent = totalQty; 
+                    qtyColumn.className = totalQty !== "{{ $totalQtyValueRcrd }}" ? 'text-danger' : 'text-success'; 
                 }
             })
-            .catch(error => {
-                displayNotification('Terjadi kesalahan: ' + error.message, 'danger');
+            .catch(error => console.error('Error fetching total quantity:', error));
+    }
+
+    function displayNotification(message, type) {
+        const notificationElement = document.querySelector('#notification');
+        notificationElement.textContent = message;
+        notificationElement.className = `alert alert-${type}`;
+        notificationElement.style.display = 'block';
+
+        setTimeout(() => {
+            notificationElement.style.display = 'none';
+        }, 10000);
+    }
+
+    function stopErrorSound() {
+        if (errorSoundInstance) {
+            errorSoundInstance.stop(); 
+            errorSoundLoop = false;
+        }
+    }
+
+    function playNotificationSound(type) {
+        const successSound = 'B/assets/audio/sukses.wav';
+        const errorSound = 'B/assets/audio/error.wav';
+
+        if (type === 'success') {
+            const sound = new Howl({
+                src: [successSound],
+                loop: false, 
+                volume: 1.0,
+                onend: function() {
+                    console.log('Success sound finished');
+                }
             });
-        } else {
-            handleErrorPopup('Data QR Code tidak valid.');
+            sound.play();
+        } else if (type === 'error') {
+            if (errorSoundInstance) {
+                errorSoundInstance.stop();
+            }
+
+            errorSoundInstance = new Howl({
+                src: [errorSound],
+                loop: true, 
+                volume: 1.0,
+                onend: function() {
+                    console.log('Error sound finished');
+                }
+            });
+
+            errorSoundInstance.play();
+            errorSoundLoop = true;
         }
     }
 
     function handleErrorPopup(message) {
-            stopErrorSound();
-            if (!isErrorSoundPlaying) {
-                playNotificationSound('error'); 
-                isErrorSoundPlaying = true; 
-            }
-
-            if (message === 'Format data salah!') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: 'Format data salah!',
-                    confirmButtonText: 'OK',
-                    showConfirmButton: true
-                }).then(() => {
-                    stopErrorSound(); 
-                    isErrorSoundPlaying = false; 
-                });
-            } else if (message === 'Tidak dapat menginput data melebihi quantity.') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: message,
-                    confirmButtonText: 'OK',
-                    showConfirmButton: true
-                }).then(() => {
-                    stopErrorSound(); 
-                    isErrorSoundPlaying = false;
-                });
-            } else if (message === 'Quantity tidak dapat melebihi quantity record') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: message,
-                    confirmButtonText: 'OK',
-                    showConfirmButton: true
-                }).then(() => {
-                    stopErrorSound(); 
-                    isErrorSoundPlaying = false;
-                });
-            } else if (message === 'Part Number tidak sesuai') {
-                localStorage.setItem('showPasswordError', 'true');
-                showPasswordProtectedPopup('Part Number tidak sesuai');
-            } else if (message === 'Data sudah ada dalam database') {
-                localStorage.setItem('showPasswordError', 'true');
-                showPasswordProtectedPopup('Data sudah ada dalam database');
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: message,
-                    confirmButtonText: 'OK',
-                    showConfirmButton: true
-                }).then(() => {
-                    stopErrorSound(); 
-                    isErrorSoundPlaying = false;
-                });
-            }
+        stopErrorSound();
+        if (!errorSoundLoop) {
+            playNotificationSound('error');
+            errorSoundLoop = true;
         }
 
-        if (localStorage.getItem('showPasswordError')) {
-            showPasswordProtectedPopup("Masukkan Password terlebih dahulu");
-            if (!isErrorSoundPlaying) {  
-                playNotificationSound('error');
-                isErrorSoundPlaying = true; 
-            }
-        }
-
-        function showPasswordProtectedPopup(errorMessage) {
+        if (message === 'Serial number sudah ada dalam database' || message === 'Serial number tidak sesuai') {
+            localStorage.setItem('showPasswordError', 'true');
+            showPasswordProtectedPopup(message);
+        } else {
             Swal.fire({
                 icon: 'error',
                 title: 'Gagal',
-                html: `<p>${errorMessage}</p>
-                    <input type="password" id="passwordInput" class="swal2-input" placeholder="Masukkan password untuk menutup notifikasi">`,
-                confirmButtonText: 'Submit',
-                preConfirm: () => {
-                    const password = document.getElementById('passwordInput').value;
-                    return fetch("{{ route('verify.password') }}", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                        },
-                        body: JSON.stringify({ password })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            localStorage.removeItem('showPasswordError'); 
-                            stopErrorSound(); 
-                            isErrorSoundPlaying = false; 
-                            return true;
-                        } else {
-                            throw new Error(data.message || 'Password salah.');
-                        }
-                    })
-                    .catch(error => {
-                        Swal.showValidationMessage(error.message);
-                        if (!isErrorSoundPlaying) {
-                            playNotificationSound('error');
-                            isErrorSoundPlaying = true;
-                        }
-                    });
-                }
-            }).then(result => {
-                if (!result.isConfirmed) {
-                    localStorage.setItem('showPasswordError', 'true');
-                    showPasswordProtectedPopup(errorMessage);
-                } else {
-                    document.getElementById('passwordInput').focus();
-                }
-            }).catch(error => {
-                Swal.showValidationMessage(error.message);
+                text: message,
+                confirmButtonText: 'OK',
+                showConfirmButton: true
+            }).then(() => {
+                stopErrorSound();
+                errorSoundLoop = false;
             });
         }
+    }
 
-        function stopErrorSound() {
-            if (errorSoundLoop) {
-                errorSoundLoop = false; 
-            }
-            isErrorSoundPlaying = false; 
+    if (localStorage.getItem('showPasswordError')) {
+        showPasswordProtectedPopup("Masukkan Password terlebih dahulu");
+        if (!errorSoundLoop) {
+            playNotificationSound('error');
+            errorSoundLoop = true;
         }
+    }
 
-        function updateQuantityDelivery() {
-            const noTransaksi = "{{ session('no_transaksi') }}";
-            
-            fetch(`/delivery/${noTransaksi}/total-qty`)
+    function showPasswordProtectedPopup(errorMessage) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal',
+            html: `<p>${errorMessage}</p>
+                <input type="password" id="passwordInput" class="swal2-input" placeholder="Masukkan password untuk menutup notifikasi">`,
+            confirmButtonText: 'Submit',
+            preConfirm: () => {
+                const password = document.getElementById('passwordInput').value;
+                return fetch("{{ route('verify.passwordrch') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                    },
+                    body: JSON.stringify({ password })
+                })
                 .then(response => response.json())
                 .then(data => {
-                    const totalQty = data.total_qty;
-                    const qtyColumn = document.querySelector('td.text-danger, td.text-success');
-                    if (qtyColumn) {
-                        qtyColumn.textContent = totalQty; 
-                        qtyColumn.className = totalQty !== "{{ $totalQtyValueRcrd }}" ? 'text-danger' : 'text-success'; 
+                    if (data.success) {
+                        localStorage.removeItem('showPasswordError');
+                        stopErrorSound();
+                        errorSoundLoop = false;
+                        return true;
+                    } else {
+                        throw new Error(data.message || 'Password salah.');
                     }
                 })
-                .catch(error => console.error('Error fetching total quantity:', error));
-        }
-
-        function displayNotification(message, type) {
-            notificationElement.textContent = message;
-            notificationElement.className = `alert alert-${type}`;
-            notificationElement.style.display = 'block';
-
-            setTimeout(() => {
-                notificationElement.style.display = 'none';
-            }, 10000);
-        }
-
-        function playNotificationSound(type) {
-        const context = new (window.AudioContext || window.webkitAudioContext)();
-        let oscillator = context.createOscillator();
-        let gainNode = context.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(context.destination);
-
-        if (type === 'success') {
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(780, context.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(1760, context.currentTime + 0.3);
-        } else if (type === 'error') {
-            oscillator.type = 'triangle';
-            oscillator.frequency.setValueAtTime(220, context.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(110, context.currentTime + 0.3);
-        }
-
-        gainNode.gain.setValueAtTime(0, context.currentTime);
-        gainNode.gain.linearRampToValueAtTime(1, context.currentTime + 0.1);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.5);
-
-        oscillator.start();
-        
-        errorSoundLoop = true;
-        setTimeout(() => {
-            if (errorSoundLoop) {
-                playNotificationSound('error'); 
+                .catch(error => {
+                    Swal.showValidationMessage(error.message);
+                    if (!errorSoundLoop) {
+                        playNotificationSound('error');
+                        errorSoundLoop = true;
+                    }
+                });
             }
-        }, 1000);
-
-        setTimeout(() => oscillator.stop(), 1000);
+        }).then(result => {
+            if (!result.isConfirmed) {
+                localStorage.setItem('showPasswordError', 'true');
+                showPasswordProtectedPopup(errorMessage);
+            } else {
+                document.getElementById('passwordInput').focus();
+            }
+        }).catch(error => {
+            Swal.showValidationMessage(error.message);
+        }).finally(() => {
+            errorSoundLoop = false;
+        });
     }
-    });
+});
 </script>
-
-<script src="https://cdn.jsdelivr.net/npm/howler"></script>
 
 <script>
     function resetForm() {
@@ -400,8 +351,11 @@ $(document).ready(function() {
         document.getElementById('delivery-table').style.display = 'none';
     }
 
+    let errorSoundLoop = false;
+    let errorSoundInstance = null;
+
     function compareQty() {
-        fetch("{{ route('delivery.compare') }}", {
+        fetch("{{ route('delivery.comparereceh') }}", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -429,7 +383,7 @@ $(document).ready(function() {
                     icon: 'error',
                     confirmButtonText: 'OK',
                     showConfirmButton: true,
-                    timer: 5000 
+                    willClose: stopErrorSound
                 });
                 playNotificationSound('error');
             }
@@ -446,88 +400,46 @@ $(document).ready(function() {
         });
     }
 
-    function playNotificationSound(type) {
-        const context = new (window.AudioContext || window.webkitAudioContext)();
-        let oscillator = context.createOscillator();
-        let gainNode = context.createGain();
+    function stopErrorSound() {
+        if (errorSoundInstance) {
+            errorSoundInstance.stop(); 
+            errorSoundLoop = false;
+        }
+    }
 
-        oscillator.connect(gainNode);
-        gainNode.connect(context.destination);
+    function playNotificationSound(type) {
+        const successSound = 'B/assets/audio/sukses.wav';
+        const errorSound = 'B/assets/audio/error.wav';
 
         if (type === 'success') {
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(780, context.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(1760, context.currentTime + 0.3);
+            const sound = new Howl({
+                src: [successSound],
+                loop: false, 
+                volume: 1.0,
+                onend: function() {
+                    console.log('Success sound finished');
+                }
+            });
+            sound.play();
         } else if (type === 'error') {
-            oscillator.type = 'triangle';
-            oscillator.frequency.setValueAtTime(220, context.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(110, context.currentTime + 0.3);
-        } else if (type === 'warning') {
-            oscillator.type = 'square';
-            oscillator.frequency.setValueAtTime(440, context.currentTime);
-            setTimeout(() => oscillator.frequency.setValueAtTime(660, context.currentTime + 0.2), 200);
+            if (errorSoundInstance) {
+                errorSoundInstance.stop();
+            }
+
+            errorSoundInstance = new Howl({
+                src: [errorSound],
+                loop: true, 
+                volume: 1.0,
+                onend: function() {
+                    console.log('Error sound finished');
+                }
+            });
+
+            errorSoundInstance.play();
+            errorSoundLoop = true;
         }
-
-        gainNode.gain.setValueAtTime(0, context.currentTime);
-        gainNode.gain.linearRampToValueAtTime(1, context.currentTime + 0.1);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.5);
-
-        oscillator.start();
-        setTimeout(() => oscillator.stop(), 2000); 
     }
 </script>
-
-<!-- <script>
-    let typingTimer;
-    const inputElement = document.getElementById('qrcode');
-    const notificationElement = document.getElementById('notification');
-
-    inputElement.addEventListener('input', function () {
-        clearTimeout(typingTimer); 
-        typingTimer = setTimeout(() => {
-            const qrData = inputElement.value;
-            const dataArray = qrData.split('|');
-
-            if (dataArray.length >= 4) {
-                const formData = new FormData(document.getElementById('dataForm'));
-                formData.append('tgl_bln_thn', new Date().toISOString().slice(0, 19).replace('T', ' '));
-                formData.append('part_number', dataArray[0]);
-                formData.append('qty', dataArray[2]);
-                formData.append('lot_number', dataArray[3]);
-                formData.append('flag', 1);
-
-                fetch("{{ route('delivery.store') }}", {
-                    method: "POST",
-                    body: formData,
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            displayNotification('Data berhasil disimpan!', 'success');
-                            inputElement.value = ""; 
-                        } else {
-                            displayNotification('Gagal menyimpan data: ' + data.message, 'danger');
-                        }
-                    })
-                    .catch(error => {
-                        displayNotification('Terjadi kesalahan: ' + error.message, 'danger');
-                    });
-            } else {
-                displayNotification('Format data QR Code tidak valid.', 'warning');
-            }
-        }, 3000); 
-    });
-
-    function displayNotification(message, type) {
-        notificationElement.textContent = message;
-        notificationElement.className = `alert alert-${type}`; 
-        notificationElement.style.display = 'block'; 
-
-        setTimeout(() => {
-            notificationElement.style.display = 'none';
-        }, 10000);
-    }
-</script> -->
 
 <style>
     .form-actions {

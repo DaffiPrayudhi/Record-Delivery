@@ -18,6 +18,9 @@
         <!-- preloader css -->
         <link rel="stylesheet" href="/B/assets/css/preloader.min.css" type="text/css" />
 
+        <!-- howler audio-->
+        <script src="https://cdn.jsdelivr.net/npm/howler"></script>
+        
         <!-- Bootstrap Css -->
         <link href="/B/assets/css/bootstrap.min.css" id="bootstrap-style" rel="stylesheet" type="text/css" />
         <!-- Icons Css -->

@@ -9,7 +9,7 @@
 @section('content')
 <div class="page-content">
     <div class="container-fluid">
-        <h1>Input Record Delivery <button style="margin-left:553px;" type="button" class="btn btn-outline-primary" onclick="window.location.href='{{ route('delivery.create') }}'">Scan Sebelumnya</button></h1>  
+        <h1>Input Record Delivery <button style="margin-left:360px;" type="button" class="btn btn-outline-primary" onclick="window.location.href='{{ route('delivery.create') }}'">Scan Sebelumnya</button> <button style="margin-left:5px;" type="button" class="btn btn-outline-primary" onclick="window.location.href='{{ route('delivery.createreceh') }}'">Scan Receh Sebelumnya</button></h1>  
         <div class="row">
             <div class="col-12">
                 <div class="card">
@@ -167,54 +167,79 @@
 <script>
     let isQuantityChecked = false;
 
-function toggleQtyInput() {
-    const qtyType = document.getElementById('qty_type').value;
-    const fullGroup = document.getElementById('fullQuantityGroup');
-    const recehGroup = document.getElementById('recehQuantityGroup');
-
-    if (qtyType === 'full') {
-        fullGroup.style.display = 'block';
-        recehGroup.style.display = 'none';
-        isQuantityChecked = false;
-        document.getElementById('checkResult').innerHTML = '';
-    } else if (qtyType === 'receh') {
-        fullGroup.style.display = 'none';
-        recehGroup.style.display = 'block';
-    } else {
-        fullGroup.style.display = 'none';
-        recehGroup.style.display = 'none';
-    }
-}
-
-function checkQuantity() {
-    const qtyInput = document.getElementById('qty').value;
-    const checkResult = document.getElementById('checkResult');
-
-    if (!qtyInput) {
-        checkResult.innerHTML = '<span style="color: red;">Please enter a quantity first.</span>';
-        isQuantityChecked = false;
-        return;
+    async function fetchQtyBoxValue(model) {
+        try {
+            const response = await fetch(`/getQtyBox/${model}`);
+            const data = await response.json();
+            return data.qty_box;
+        } catch (error) {
+            console.error('Gagal memproses data:', error);
+            return null;
+        }
     }
 
-    if (qtyInput % 5 === 0) {
-        checkResult.innerHTML = '<span style="color: green;">Quantity is valid (multiple of 5).</span>';
-        isQuantityChecked = true;
-    } else {
-        checkResult.innerHTML = '<span style="color: red;">Quantity is not a multiple of 5.</span>';
-        isQuantityChecked = false;
+    function toggleQtyInput() {
+        const qtyType = document.getElementById('qty_type').value;
+        const fullGroup = document.getElementById('fullQuantityGroup');
+        const recehGroup = document.getElementById('recehQuantityGroup');
+
+        if (qtyType === 'full') {
+            fullGroup.style.display = 'block';
+            recehGroup.style.display = 'none';
+            isQuantityChecked = false;
+            document.getElementById('checkResult').innerHTML = '';
+        } else if (qtyType === 'receh') {
+            fullGroup.style.display = 'none';
+            recehGroup.style.display = 'block';
+        } else {
+            fullGroup.style.display = 'none';
+            recehGroup.style.display = 'none';
+        }
     }
-}
 
-document.getElementById('dataForm').addEventListener('submit', function (e) {
-    const qtyType = document.getElementById('qty_type').value;
+    async function checkQuantity() {
+        const model = document.getElementById('model').value;
+        const qtyInput = document.getElementById('qty').value;
+        const checkResult = document.getElementById('checkResult');
 
-    if (qtyType === 'full' && !isQuantityChecked) {
-        e.preventDefault();
-        alert('Please check the quantity before submitting.');
+        if (!model || !qtyInput) {
+            checkResult.innerHTML = '<span style="color: red;">Pilih Model terlebih dahulu</span>';
+            isQuantityChecked = false;
+            return;
+        }
+
+        const qtyBox = await fetchQtyBoxValue(model);
+
+        if (!qtyBox) {
+            checkResult.innerHTML = '<span style="color: red;">Gagal mengambil data</span>';
+            isQuantityChecked = false;
+            return;
+        }
+
+        if (qtyInput % qtyBox === 0) {
+            checkResult.innerHTML = `<span style="color: green;">Quantity merupakan kelipatan ${qtyBox}.</span>`;
+            isQuantityChecked = true;
+        } else {
+            checkResult.innerHTML = `<span style="color: red;">Quantity bukan kelipatan ${qtyBox}.</span>`;
+            isQuantityChecked = false;
+        }
     }
-});
 
-document.addEventListener('DOMContentLoaded', toggleQtyInput);
+    document.getElementById('dataForm').addEventListener('submit', function (e) {
+        const qtyType = document.getElementById('qty_type').value;
+
+        if (qtyType === 'full' && !isQuantityChecked) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Tolong check dan sesuaikan quantity terlebih dahulu',
+                confirmButtonText: 'Ok'
+            });
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', toggleQtyInput);
 </script>
 
 <script>

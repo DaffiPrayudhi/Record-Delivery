@@ -7,6 +7,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RecordController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\DashboardController;
+use App\Models\M_Model_Part;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
@@ -30,8 +31,11 @@ Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.de
 Route::middleware('auth')->group(function () {
     //dashboard 
     Route::get('get-spareparts-data', [DashboardController::class, 'getDataAll'])->name('getspareparts.data');
+    Route::get('get-spareparts-datarch', [DashboardController::class, 'getDataAllRch'])->name('getspareparts.datarch');
     Route::get('spareparts-record', [DashboardController::class, 'getDataRecord'])->name('getrecord.data');
+    Route::get('spareparts-recordrch', [DashboardController::class, 'getDataRecordRch'])->name('getrecord.datarch');
     Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
+    Route::get('/dashboardreceh', [DashboardController::class,'create'])->name('dashboardreceh');
     //profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -45,13 +49,23 @@ Route::middleware('auth')->group(function () {
     Route::resource('/record', RecordController::class);
     Route::get('/get-model-data/{model}', [RecordController::class, 'getModelData']);
     Route::post('/get-plant-dest', [RecordController::class, 'getPlantDest'])->name('record.getPlantDest');
+    Route::get('/getQtyBox/{model}', function($model) {
+        $part = M_Model_Part::where('model', $model)->first();
+        if ($part) {
+            return response()->json(['qty_box' => $part->qty_box]);
+        }
+        return response()->json(['qty_box' => null]);
+    });
 
     //deliveryrch
     Route::resource('/deliveryrch', controller: DeliveryRchController::class);
     Route::get('/delivery-data-receh', [DeliveryRchController::class, 'createreceh'])->name('delivery.createreceh');
     Route::post('/store-data-receh', [DeliveryRchController::class, 'storereceh'])->name('delivery.storereceh');
     Route::post('/delivery/checkSerialNumber', [DeliveryRchController::class, 'checkSerialNumber'])->name('delivery.checkSerialNumber');
-
+    Route::get('/delivery-data-rch', [DeliveryRchController::class, 'getDeliveryDataRch'])->name('delivery.datareceh');
+    Route::get('/delivery/{noTransaksi}/total-qty-rch', [DeliveryRchController::class, 'getTotalQty']);
+    Route::post('/delivery/compare-rch', [DeliveryRchController::class, 'compareQty'])->name('delivery.comparereceh');
+    Route::post('/verify-passwordrch', [DeliveryRchController::class, 'verifyPasswordRch'])->name('verify.passwordrch');
 
     //delivery
     Route::resource('/delivery', DeliveryController::class);
