@@ -8,6 +8,8 @@ use App\Models\RecordRch;
 use App\Models\M_Model_Part;
 use App\Models\M_Qty_pcs;
 use Yajra\DataTables\DataTables;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Exception;
 
 class RecordController extends Controller
@@ -55,10 +57,36 @@ class RecordController extends Controller
             'qty' => 'nullable|integer|required_if:qty_type,full',
             'qty_receh' => 'nullable|integer|required_if:qty_type,receh',
         ]);
-    
-        $noTransaksi = 'AVI' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
 
-        $noTransaksiRcd = 'RCH' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
+        $dateNow = now()->format('dmy');
+
+        $lastTransaction = DB::table('record')
+            ->select('no_transaksi')
+            ->where('no_transaksi', 'like', 'AV' . $dateNow . '%')
+            ->orderBy('no_transaksi', 'DESC')
+            ->first();
+
+        $counter = $lastTransaction
+            ? str_pad((int)substr($lastTransaction->no_transaksi, 9) + 1, 2, '0', STR_PAD_LEFT)
+            : '01';
+
+        $noTransaksi = 'AV' . $dateNow . $counter;
+
+        $lastTransactionRch = DB::table('record_receh')
+            ->select('no_transaksi')
+            ->where('no_transaksi', 'like', 'RC' . $dateNow . '%')
+            ->orderBy('no_transaksi', 'DESC')
+            ->first();
+
+        $counterRch = $lastTransactionRch
+            ? str_pad((int)substr($lastTransactionRch->no_transaksi, 9) + 1, 2, '0', STR_PAD_LEFT)
+            : '01';
+
+        $noTransaksiRch = 'RC' . $dateNow . $counterRch;
+    
+        // $noTransaksi = 'AVI' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
+
+        // $noTransaksiRcd = 'RCH' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
     
         if ($validatedData['qty_type'] === 'full') {
             if (!$request->has('qty') || empty($validatedData['qty'])) {
@@ -106,7 +134,7 @@ class RecordController extends Controller
             }
     
             $recordRch = new RecordRch([
-                'no_transaksi' => $noTransaksiRcd,
+                'no_transaksi' => $noTransaksiRch,
                 'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
                 'tgl_bln_thn_dlv' => $validatedData['tgl_bln_thn_dlv'],
                 'model' => $validatedData['model'],
@@ -125,7 +153,7 @@ class RecordController extends Controller
     
             if ($recordRch->save()) {
                 $request->session()->put([
-                    'no_transaksi' => $noTransaksiRcd,
+                    'no_transaksi' => $noTransaksiRch,
                     'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
                     'tgl_bln_thn_dlv' => $validatedData['tgl_bln_thn_dlv'],
                     'model' => $validatedData['model'],

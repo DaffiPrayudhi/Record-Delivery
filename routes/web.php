@@ -34,8 +34,10 @@ Route::middleware('auth')->group(function () {
     Route::get('get-spareparts-datarch', [DashboardController::class, 'getDataAllRch'])->name('getspareparts.datarch');
     Route::get('spareparts-record', [DashboardController::class, 'getDataRecord'])->name('getrecord.data');
     Route::get('spareparts-recordrch', [DashboardController::class, 'getDataRecordRch'])->name('getrecord.datarch');
+    Route::get('error-logs', [DashboardController::class, 'getDataError'])->name('getrecord.error');
     Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
     Route::get('/dashboardreceh', [DashboardController::class,'create'])->name('dashboardreceh');
+    Route::get('/dashboarderror', [DashboardController::class,'errorview'])->name('dashboarderror');
     //profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -73,9 +75,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/delivery-data', [DeliveryController::class, 'getDeliveryData'])->name('delivery.data');
     Route::get('/delivery/{noTransaksi}/total-qty', [DeliveryController::class, 'getTotalQty']);
     Route::post('/verify-password', [DeliveryController::class, 'verifyPassword'])->name('verify.password');
+    Route::post('/save-log', [DeliveryController::class, 'saveLog'])->name('save.log');
 
 });
 
-
+    
 require __DIR__.'/auth.php';
 

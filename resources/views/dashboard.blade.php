@@ -20,6 +20,7 @@
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                         <li><a class="dropdown-item" href="{{ route('dashboard') }}">Dashboard</a></li>
                         <li><a class="dropdown-item" href="{{ route('dashboardreceh') }}">Dashboard Receh</a></li>
+                        <li><a class="dropdown-item" href="{{ route('dashboarderror') }}">Error Logs</a></li>
                     </ul>
                 </div>
 
@@ -161,7 +162,9 @@
            info: false,
            pageLength: 5,
            lengthMenu: [5, 10, 25, 50],
-           lengthChange: false
+           lengthChange: false,
+           responsive: true,
+            order: [[1, 'desc']]
        });
    });
 </script>
@@ -192,7 +195,9 @@
         info: false,
         pageLength: 5,
         lengthMenu: [5, 10, 25, 50],
-        lengthChange: false
+        lengthChange: false,
+        responsive: true,
+        order: [[1, 'desc']]
     });
 });
 </script>

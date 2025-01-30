@@ -205,13 +205,13 @@ $(document).ready(function() {
         }
 
         function handleErrorPopup(message) {
-            stopErrorSound();
+            stopErrorSound();   
             if (!isErrorSoundPlaying) {
                 playErrorSound();
                 isErrorSoundPlaying = true; 
             }
 
-            if (message === 'Format data salah!' || message === 'Tidak dapat menginput data melebihi quantity.' || message === 'Quantity tidak dapat melebihi quantity record') {
+            if (message === 'Format data salah!' || message === 'Tidak dapat menginput data melebihi quantity' || message === 'Quantity tidak dapat melebihi quantity record') {
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
@@ -222,22 +222,61 @@ $(document).ready(function() {
                     stopErrorSound(); 
                     isErrorSoundPlaying = false;
                 });
-            } else if (message === 'Part Number tidak sesuai') {
+            } else if (message === 'Part Number tidak sesuai' || message === 'Data sudah ada dalam database') {
                 localStorage.setItem('showPasswordError', 'true');
-                showPasswordProtectedPopup('Part Number tidak sesuai');
-            } else if (message === 'Data sudah ada dalam database') {
-                localStorage.setItem('showPasswordError', 'true');
-                showPasswordProtectedPopup('Data sudah ada dalam database');
+                showPasswordProtectedPopup(message);
             } else {
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
-                    text: message,
+                    html: `<p>${message}</p>
+                        <textarea id="noteInput" class="swal2-input" placeholder="Masukkan catatan" style="height: 100px; width: 100%; resize: none; padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;"></textarea>`,
                     confirmButtonText: 'OK',
-                    showConfirmButton: true
-                }).then(() => {
-                    stopErrorSound(); 
-                    isErrorSoundPlaying = false;
+                    preConfirm: () => {
+                        const note = document.getElementById('noteInput').value.trim();
+                        if (!note) {
+                            Swal.showValidationMessage('Catatan tidak boleh kosong.');
+                            return false;
+                        }
+                        return true;
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const note = document.getElementById('noteInput').value;
+                        const noTransaksi = "{{ session('no_transaksi') }}";
+                        const tglBlnThn = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+                        fetch("{{ route('save.log') }}", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                            },
+                            body: JSON.stringify({
+                                no_transaksi: noTransaksi,
+                                tgl_bln_thn: tglBlnThn,
+                                note: note
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                stopErrorSound(); 
+                                isErrorSoundPlaying = false; 
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Log berhasil disimpan!',
+                                });
+                            } else {
+                                Swal.showValidationMessage('Gagal menyimpan log.');
+                            }
+                        })
+                        .catch(error => {
+                            Swal.showValidationMessage(error.message);
+                        });
+                    }
+                }).finally(() => {
+                    isErrorSoundPlaying = false;  
                 });
             }
         }
@@ -255,10 +294,16 @@ $(document).ready(function() {
                 icon: 'error',
                 title: 'Gagal',
                 html: `<p>${errorMessage}</p>
-                    <input type="password" id="passwordInput" class="swal2-input" placeholder="Masukkan password untuk menutup notifikasi">`,
+                    <textarea id="noteInput" class="swal2-input" placeholder="Masukkan catatan" autocomplete="off" style="height: 100px; width: 100%; resize: none; padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;"></textarea>
+                    <input type="password" id="passwordInput" class="swal2-input" placeholder="Masukkan password" style="padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;">`,  
                 confirmButtonText: 'Submit',
                 preConfirm: () => {
                     const password = document.getElementById('passwordInput').value;
+                    const note = document.getElementById('noteInput').value;
+                    if (!note.trim()) {
+                        Swal.showValidationMessage('Catatan tidak boleh kosong.');
+                        return false; 
+                    }
                     return fetch("{{ route('verify.password') }}", {
                         method: "POST",
                         headers: {
@@ -270,10 +315,39 @@ $(document).ready(function() {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            localStorage.removeItem('showPasswordError'); 
-                            stopErrorSound(); 
-                            isErrorSoundPlaying = false; 
-                            return true;
+                            const noTransaksi = "{{ session('no_transaksi') }}";
+                            const tglBlnThn = new Date().toISOString().slice(0, 19).replace('T', ' '); 
+
+                            return fetch("{{ route('save.log') }}", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                                },
+                                body: JSON.stringify({
+                                    no_transaksi: noTransaksi,
+                                    tgl_bln_thn: tglBlnThn,
+                                    note: note
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    localStorage.removeItem('showPasswordError'); 
+                                    stopErrorSound(); 
+                                    isErrorSoundPlaying = false; 
+                                    return true;
+                                } else {
+                                    throw new Error(data.message || 'Gagal menyimpan log.');
+                                }
+                            })
+                            .catch(error => {
+                                Swal.showValidationMessage(error.message);
+                                if (!isErrorSoundPlaying) {
+                                    playErrorSound();
+                                    isErrorSoundPlaying = true;
+                                }
+                            });
                         } else {
                             throw new Error(data.message || 'Password salah.');
                         }
@@ -299,7 +373,6 @@ $(document).ready(function() {
                 isErrorSoundPlaying = false;  
             });
         }
-
 
         function stopErrorSound() {
             isErrorSoundPlaying = false; 

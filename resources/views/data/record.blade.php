@@ -123,7 +123,7 @@
                                         <!-- Quantity input for Receh -->
                                         <div class="mb-3" id="recehQuantityGroup" style="display: none;">
                                             <label for="qty_receh" class="form-label">Quantity (Receh)</label>
-                                            <input type="number" class="form-control @error('qty_receh') is-invalid @enderror" id="qty_receh" name="qty_receh" value="{{ old('qty_receh') }}">
+                                            <input type="number" class="form-control @error('qty_receh') is-invalid @enderror" id="qty_receh" name="qty_receh" value="{{ old('qty_receh') }}" min="1" step="1">
                                             @error('qty_receh')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
@@ -178,7 +178,7 @@
         }
     }
 
-    function toggleQtyInput() {
+    async function toggleQtyInput() {
         const qtyType = document.getElementById('qty_type').value;
         const fullGroup = document.getElementById('fullQuantityGroup');
         const recehGroup = document.getElementById('recehQuantityGroup');
@@ -202,28 +202,51 @@
         const qtyInput = document.getElementById('qty').value;
         const checkResult = document.getElementById('checkResult');
 
-        if (!model || !qtyInput) {
-            checkResult.innerHTML = '<span style="color: red;">Pilih Model terlebih dahulu</span>';
-            isQuantityChecked = false;
+            if (!model || !qtyInput) {
+                checkResult.innerHTML = '<span style="color: red;">Pilih Model terlebih dahulu</span>';
+                isQuantityChecked = false;
+                return;
+            }
+
+            const qtyBox = await fetchQtyBoxValue(model);
+
+            if (!qtyBox) {
+                checkResult.innerHTML = '<span style="color: red;">Gagal mengambil data</span>';
+                isQuantityChecked = false;
+                return;
+            }
+
+            if (qtyInput % qtyBox === 0) {
+                checkResult.innerHTML = `<span style="color: green;">Quantity merupakan kelipatan ${qtyBox}.</span>`;
+                isQuantityChecked = true;
+            } else {
+                checkResult.innerHTML = `<span style="color: red;">Quantity bukan kelipatan ${qtyBox}.</span>`;
+                isQuantityChecked = false;
+            }
+        }
+
+    async function limitRecehQuantity() {
+        const model = document.getElementById('model').value;
+        const qtyRecehInput = document.getElementById('qty_receh');
+        
+        if (!model) {
+            qtyRecehInput.setAttribute('max', '');
+            qtyRecehInput.value = '';
             return;
         }
 
         const qtyBox = await fetchQtyBoxValue(model);
 
-        if (!qtyBox) {
-            checkResult.innerHTML = '<span style="color: red;">Gagal mengambil data</span>';
-            isQuantityChecked = false;
-            return;
-        }
-
-        if (qtyInput % qtyBox === 0) {
-            checkResult.innerHTML = `<span style="color: green;">Quantity merupakan kelipatan ${qtyBox}.</span>`;
-            isQuantityChecked = true;
+        if (qtyBox) {
+            qtyRecehInput.setAttribute('max', qtyBox);  
+            if (parseInt(qtyRecehInput.value) > qtyBox) {
+                qtyRecehInput.value = qtyBox;
+            }
         } else {
-            checkResult.innerHTML = `<span style="color: red;">Quantity bukan kelipatan ${qtyBox}.</span>`;
-            isQuantityChecked = false;
+            qtyRecehInput.setAttribute('max', '');  
         }
     }
+
 
     document.getElementById('dataForm').addEventListener('submit', function (e) {
         const qtyType = document.getElementById('qty_type').value;
@@ -239,7 +262,17 @@
         }
     });
 
-    document.addEventListener('DOMContentLoaded', toggleQtyInput);
+    document.addEventListener('DOMContentLoaded', function(){
+        toggleQtyInput();
+        limitRecehQuantity(); 
+    });
+    document.getElementById('model').addEventListener('change', limitRecehQuantity);
+    document.getElementById('qty_receh').addEventListener('input', function() {
+        const maxQty = parseInt(this.getAttribute('max'));
+        if (parseInt(this.value) > maxQty) {
+            this.value = maxQty;  
+        }
+    });
 </script>
 
 <script>

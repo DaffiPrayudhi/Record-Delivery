@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\RecordSmpn;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Record;
 use App\Models\M_Qty;
-use App\Models\M_Qty_pcs;
+use App\Models\Logs;
 use App\Models\Delivery;
 use Yajra\DataTables\DataTables;
 
@@ -81,8 +82,11 @@ class DeliveryController extends Controller
                 'model' => $dataArray[0],
                 'qty' => $dataArray[2],
             ];
+
     
-            $noTransaksi = $request->input('no_transaksi') ?? 'AVI' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
+            $noTransaksi = session('no_transaksi');
+
+            // $noTransaksi = $request->input('no_transaksi') ?? 'AVI' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
     
             $record = new Delivery([
                 'no_transaksi' => $noTransaksi,
@@ -99,8 +103,11 @@ class DeliveryController extends Controller
             $isDuplicate = Delivery::where('part_number', $partNumber)
                 ->where('lot_number', $lotNumber)
                 ->exists();
+
+            $isDuplicateRch = RecordSmpn::where('lot_number', $lotNumber)
+                ->exists();
     
-            if ($isDuplicate) {
+            if ($isDuplicate||$isDuplicateRch) {
                 return response()->json(['success' => false, 'message' => 'Data sudah ada dalam database'], 409);
             }
     
@@ -316,6 +323,24 @@ class DeliveryController extends Controller
             'totalQtyValueRcrd' => $totalQtyValueRcrd,
         ]);
     }
+
+    public function saveLog(Request $request)
+    {
+        $validatedData = $request->validate([
+            'no_transaksi' => 'required|string',
+            'tgl_bln_thn' => 'required|string',
+            'note' => 'required|string',
+        ]);
+
+        Logs::create([
+            'no_transaksi' => $validatedData['no_transaksi'],
+            'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
+            'note' => $validatedData['note'],
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
 
 
 

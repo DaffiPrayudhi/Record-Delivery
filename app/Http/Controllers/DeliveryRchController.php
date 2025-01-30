@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\Session;
 use App\Models\Record;
 use App\Models\M_Qty;
 use App\Models\M_Model_Part;
-use App\Models\M_Trans;
-use App\Models\M_Qty_pcs;
+use App\Models\Logs;
 use App\Models\RecordRch;
 use App\Models\DeliveryRch;
 use App\Models\Delivery;
@@ -137,7 +136,6 @@ class DeliveryRchController extends Controller
                 }
             }
 
-            // Update data transaksi berdasarkan no_transaksi di session
             $noTransaksi = session('no_transaksi');
             $transaksi = RecordRch::where('no_transaksi', $noTransaksi)->first();
 

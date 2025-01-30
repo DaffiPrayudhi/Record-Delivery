@@ -29,6 +29,11 @@ class DashboardController extends Controller
         return view('dashboardreceh');
     }
 
+    public function errorview()
+    {
+        return view('dashboarderror');
+    }
+
     /**
      * Store a newly created resource in storage.
      */
@@ -177,6 +182,27 @@ class DashboardController extends Controller
             )
             ->distinct()
             ->orderBy('record_receh.tgl_bln_thn', 'desc')
+            ->get();
+    
+        return DataTables::of($query)->make(true);
+    }   
+
+    public function getDataError(Request $request)
+    {
+        $query = DB::table('logserror')
+            ->join('delivery', 'logserror.no_transaksi', '=', 'delivery.no_transaksi')
+            ->join('record', 'logserror.no_transaksi', '=', 'record.no_transaksi')
+            
+            ->select(
+                'logserror.no_transaksi',
+                'logserror.tgl_bln_thn', 
+                'delivery.lot_number', 
+                'record.model',
+                'delivery.part_number',
+                'record.tipe_delv',
+                'record.plant_dest',
+                'logserror.note'
+            )
             ->get();
     
         return DataTables::of($query)->make(true);
