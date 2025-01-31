@@ -1,0 +1,25 @@
+Record delivery
+
+1. Udpdate validasi pengecekan lot_number tabel receh di form input full v
+2. Buat fungsi parameter input qty receh berdasarkan qty_box v
+3. Buat agar notifikasi popup REQUIRE input note (semua error) v
+4. Buat tabel baru untuk menyimpan data log error (id, no_transaksi, tgl_bln_thn, note) v
+5. Buat view tampilan data note error dalam tabel di dashboard v
+6. Ubah fungsi generate no_transaksi jadi generate tgl hari ini + 2/3 random value, total maks value 10 (less priority) v
+7. Buat fungsi untuk export excel dari tabel dashboard (less priority)
+
+
+37100-K59 -A731-M1|1100073|10|B1687942
+37100-K45 -NL12-M1|1100073|10|B1710039
+3710A-K1Z -NA01-DL|1100073|10|B1710040
+3710A-K1Z -NA01-DL|1100073|20|B1710044
+37100-K45 -NL12-M1|1100073|10|B1710851
+3710A-K1Z -NA01-DL|1100073|15|B1710049
+37100-K45 -NL12-M1|1100073|15|B1710223
+37100-K3V -N111-M1|1100073|5|B1710991
+37100-K3V -N111-M1|1100073|5|B1710992
+37100-K3V -N111-M1|1100073|5|B1710993
+37100-K45 -NL12-M1|1100073|
+
+S45RNL22221
+S45MNL22221
