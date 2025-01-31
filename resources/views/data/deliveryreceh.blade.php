@@ -265,7 +265,7 @@ $(document).ready(function () {
             errorSoundLoop = true;
         }
 
-        if (message === 'Serial number sudah ada dalam database' || message === 'Serial number tidak sesuai') {
+        if (message === 'Serial number sudah ada dalam database' || message === 'Serial number tidak sesuai' || message === 'Tidak dapat menginput data melebihi quantity.') {
             localStorage.setItem('showPasswordError', 'true');
             showPasswordProtectedPopup(message);
         } else {
@@ -295,50 +295,85 @@ $(document).ready(function () {
             icon: 'error',
             title: 'Gagal',
             html: `<p>${errorMessage}</p>
-                <input type="password" id="passwordInput" class="swal2-input" placeholder="Masukkan password untuk menutup notifikasi">`,
-            confirmButtonText: 'Submit',
-            preConfirm: () => {
-                const password = document.getElementById('passwordInput').value;
-                return fetch("{{ route('verify.passwordrch') }}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                    },
-                    body: JSON.stringify({ password })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        localStorage.removeItem('showPasswordError');
-                        stopErrorSound();
-                        errorSoundLoop = false;
-                        return true;
-                    } else {
-                        throw new Error(data.message || 'Password salah.');
+                    <textarea id="noteInput" class="swal2-input" placeholder="Masukkan catatan" autocomplete="off" style="height: 100px; width: 100%; resize: none; padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;"></textarea>
+                    <input type="password" id="passwordInput" class="swal2-input" placeholder="Masukkan password" style="padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;">`,  
+                confirmButtonText: 'Submit',
+                preConfirm: () => {
+                    const password = document.getElementById('passwordInput').value;
+                    const note = document.getElementById('noteInput').value;
+                    if (!note.trim()) {
+                        Swal.showValidationMessage('Catatan tidak boleh kosong.');
+                        return false; 
                     }
-                })
-                .catch(error => {
-                    Swal.showValidationMessage(error.message);
-                    if (!errorSoundLoop) {
-                        playNotificationSound('error');
-                        errorSoundLoop = true;
-                    }
-                });
-            }
-        }).then(result => {
-            if (!result.isConfirmed) {
-                localStorage.setItem('showPasswordError', 'true');
-                showPasswordProtectedPopup(errorMessage);
-            } else {
-                document.getElementById('passwordInput').focus();
-            }
-        }).catch(error => {
-            Swal.showValidationMessage(error.message);
-        }).finally(() => {
-            errorSoundLoop = false;
-        });
-    }
+                    return fetch("{{ route('verify.password') }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                        },
+                        body: JSON.stringify({ password })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const noTransaksi = "{{ session('no_transaksi') }}";
+                            const tglBlnThn = new Date().toISOString().slice(0, 19).replace('T', ' '); 
+
+                            return fetch("{{ route('save.log') }}", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                                },
+                                body: JSON.stringify({
+                                    no_transaksi: noTransaksi,
+                                    tgl_bln_thn: tglBlnThn,
+                                    note: note
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    localStorage.removeItem('showPasswordError'); 
+                                    stopErrorSound(); 
+                                    errorSoundLoop = false; 
+                                    return true;
+                                } else {
+                                    throw new Error(data.message || 'Gagal menyimpan log.');
+                                }
+                            })
+                            .catch(error => {
+                                Swal.showValidationMessage(error.message);
+                                if (!errorSoundLoop) {
+                                    playErrorSound();
+                                    errorSoundLoop = true;
+                                }
+                            });
+                        } else {
+                            throw new Error(data.message || 'Password salah.');
+                        }
+                    })
+                    .catch(error => {
+                        Swal.showValidationMessage(error.message);
+                        if (!errorSoundLoop) {
+                            playErrorSound();
+                            errorSoundLoop = true;
+                        }
+                    });
+                }
+            }).then(result => {
+                if (!result.isConfirmed) {
+                    localStorage.setItem('showPasswordError', 'true');
+                    showPasswordProtectedPopup(errorMessage);
+                } else {
+                    document.getElementById('passwordInput').focus();
+                }
+            }).catch(error => {
+                Swal.showValidationMessage(error.message);
+            }).finally(() => {
+                errorSoundLoop = false;  
+            });
+        }
 });
 </script>
 

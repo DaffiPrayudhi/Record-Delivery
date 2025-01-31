@@ -203,6 +203,29 @@ class DashboardController extends Controller
                 'record.plant_dest',
                 'logserror.note'
             )
+            ->distinct()
+            ->get();
+    
+        return DataTables::of($query)->make(true);
+    }   
+
+    public function getDataErrorRch(Request $request)
+    {
+        $query = DB::table('logserror')
+            ->join('delivery_receh', 'logserror.no_transaksi', '=', 'delivery_receh.no_transaksi')
+            ->join('record_receh', 'logserror.no_transaksi', '=', 'record_receh.no_transaksi')
+            
+            ->select(
+                'logserror.no_transaksi',
+                'logserror.tgl_bln_thn', 
+                'delivery_receh.lot_number', 
+                'record_receh.model',
+                'delivery_receh.part_number',
+                'record_receh.tipe_delv',
+                'record_receh.plant_dest',
+                'logserror.note'
+            )
+            ->distinct()
             ->get();
     
         return DataTables::of($query)->make(true);

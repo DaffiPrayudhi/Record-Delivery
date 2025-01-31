@@ -57,6 +57,30 @@
                 </div>
             </div>
         </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h1>Error Logs Receh</h1>
+                        <table id="errorrch-table" class="table table-hover table-bordered table-responsive">
+                            <thead class="table-header">
+                                <tr>
+                                    <th>No Transaksi</th>
+                                    <th>Tanggal</th>
+                                    <th>Model</th>
+                                    <th>Part Number</th>
+                                    <th>Lot Number</th>
+                                    <th>Tipe Delivery</th>
+                                    <th>Plant Destination</th>
+                                    <th>Keterangan</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- end row-->                        
     </div>
     <!-- container-fluid -->
@@ -104,6 +128,38 @@
            serverSide: true,
            ajax: {
                url: '{{ route('getrecord.error') }}',
+               type: 'GET'
+           },
+           columns: [
+               { data: 'no_transaksi', name: 'no_transaksi' },
+               { data: 'tgl_bln_thn', name: 'tgl_bln_thn' },
+               { data: 'model', name: 'model' },
+               { data: 'part_number', name: 'part_number' },
+               { data: 'lot_number', name: 'lot_number' },
+               { data: 'tipe_delv', name: 'tipe_delv' },
+               { data: 'plant_dest', name: 'plant_dest' },
+               { data: 'note', name: 'note' }
+           ],
+           paging: true,
+           searching: true,
+           ordering: true,
+           info: false,
+           pageLength: 5,
+           lengthMenu: [5, 10, 25, 50],
+           lengthChange: false,
+           responsive: true,
+           order: [[1, 'desc']]
+       });
+   });
+</script>
+
+<script>    
+   $(document).ready(function() {
+       var table = $('#errorrch-table').DataTable({
+           processing: true,
+           serverSide: true,
+           ajax: {
+               url: '{{ route('getrecord.errorrch') }}',
                type: 'GET'
            },
            columns: [

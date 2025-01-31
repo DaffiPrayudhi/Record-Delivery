@@ -205,27 +205,14 @@ $(document).ready(function() {
         }
 
         function handleErrorPopup(message) {
-            stopErrorSound();   
+            stopErrorSound();
             if (!isErrorSoundPlaying) {
                 playErrorSound();
-                isErrorSoundPlaying = true; 
+                isErrorSoundPlaying = true;
             }
 
-            if (message === 'Format data salah!' || message === 'Tidak dapat menginput data melebihi quantity' || message === 'Quantity tidak dapat melebihi quantity record') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: message,
-                    confirmButtonText: 'OK',
-                    showConfirmButton: true
-                }).then(() => {
-                    stopErrorSound(); 
-                    isErrorSoundPlaying = false;
-                });
-            } else if (message === 'Part Number tidak sesuai' || message === 'Data sudah ada dalam database') {
+            if (['Format data salah!', 'Tidak dapat menginput data melebihi quantity', 'Quantity tidak dapat melebihi quantity record'].includes(message)) { 
                 localStorage.setItem('showPasswordError', 'true');
-                showPasswordProtectedPopup(message);
-            } else {
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
@@ -238,11 +225,12 @@ $(document).ready(function() {
                             Swal.showValidationMessage('Catatan tidak boleh kosong.');
                             return false;
                         }
-                        return true;
-                    }
+                        return note;
+                    },
+                    allowOutsideClick: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        const note = document.getElementById('noteInput').value;
+                        const note = result.value;
                         const noTransaksi = "{{ session('no_transaksi') }}";
                         const tglBlnThn = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
@@ -261,12 +249,9 @@ $(document).ready(function() {
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                stopErrorSound(); 
-                                isErrorSoundPlaying = false; 
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Log berhasil disimpan!',
-                                });
+                                stopErrorSound();
+                                isErrorSoundPlaying = false;
+                                localStorage.removeItem('showPasswordError');
                             } else {
                                 Swal.showValidationMessage('Gagal menyimpan log.');
                             }
@@ -275,8 +260,26 @@ $(document).ready(function() {
                             Swal.showValidationMessage(error.message);
                         });
                     }
-                }).finally(() => {
-                    isErrorSoundPlaying = false;  
+                });
+            } else if (['Part Number tidak sesuai', 'Data sudah ada dalam database'].includes(message)) {
+                localStorage.setItem('showPasswordError', 'true');
+                showPasswordProtectedPopup(message);
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    html: `<p>${message}</p>
+                        <textarea id="noteInput" class="swal2-input" placeholder="Masukkan catatan" style="height: 100px; width: 100%; resize: none; padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;"></textarea>`,
+                    confirmButtonText: 'OK',
+                    preConfirm: () => {
+                        const note = document.getElementById('noteInput').value.trim();
+                        if (!note) {
+                            Swal.showValidationMessage('Catatan tidak boleh kosong.');
+                            return false;
+                        }
+                        return true;
+                    },
+                    allowOutsideClick: false
                 });
             }
         }
@@ -329,54 +332,26 @@ $(document).ready(function() {
                                     tgl_bln_thn: tglBlnThn,
                                     note: note
                                 })
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    localStorage.removeItem('showPasswordError'); 
-                                    stopErrorSound(); 
-                                    isErrorSoundPlaying = false; 
-                                    return true;
-                                } else {
-                                    throw new Error(data.message || 'Gagal menyimpan log.');
-                                }
-                            })
-                            .catch(error => {
-                                Swal.showValidationMessage(error.message);
-                                if (!isErrorSoundPlaying) {
-                                    playErrorSound();
-                                    isErrorSoundPlaying = true;
-                                }
                             });
+                        }
+                        throw new Error('Password salah.');
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            stopErrorSound();
+                            isErrorSoundPlaying = false;
+                            localStorage.removeItem('showPasswordError');
                         } else {
-                            throw new Error(data.message || 'Password salah.');
+                            Swal.showValidationMessage('Gagal menyimpan log.');
                         }
                     })
                     .catch(error => {
                         Swal.showValidationMessage(error.message);
-                        if (!isErrorSoundPlaying) {
-                            playErrorSound();
-                            isErrorSoundPlaying = true;
-                        }
                     });
-                }
-            }).then(result => {
-                if (!result.isConfirmed) {
-                    localStorage.setItem('showPasswordError', 'true');
-                    showPasswordProtectedPopup(errorMessage);
-                } else {
-                    document.getElementById('passwordInput').focus();
-                }
-            }).catch(error => {
-                Swal.showValidationMessage(error.message);
-            }).finally(() => {
-                isErrorSoundPlaying = false;  
+                },
+                allowOutsideClick: false
             });
-        }
-
-        function stopErrorSound() {
-            isErrorSoundPlaying = false; 
-            Howler.stop(); 
         }
 
         function updateQuantityDelivery() {
@@ -428,6 +403,11 @@ $(document).ready(function() {
             });
             sound.play();
             isErrorSoundPlaying = true;
+        }
+
+        function stopErrorSound() {
+            isErrorSoundPlaying = false; 
+            Howler.stop(); 
         }
     });
 </script>
