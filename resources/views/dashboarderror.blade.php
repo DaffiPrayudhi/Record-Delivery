@@ -38,7 +38,7 @@
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-body">
-                        <h1>Error Logs</h1>
+                        <h1 class="d-flex justify-content-between">Error Logs <a href="{{ route('export.error') }}" class="btn btn-success">Export Data</a></h1>
                         <table id="error-table" class="table table-hover table-bordered table-responsive">
                             <thead class="table-header">
                                 <tr>
@@ -62,7 +62,7 @@
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-body">
-                        <h1>Error Logs Receh</h1>
+                        <h1 class="d-flex justify-content-between">Error Logs Receh <a href="{{ route('export.errorrch') }}" class="btn btn-success">Export Data</a></h1>
                         <table id="errorrch-table" class="table table-hover table-bordered table-responsive">
                             <thead class="table-header">
                                 <tr>

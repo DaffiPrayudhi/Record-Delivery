@@ -38,7 +38,7 @@
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-body">
-                        <h1>Transaksi ID</h1>
+                        <h1 class="d-flex justify-content-between">Transaksi ID <a href="{{ route('export.dashboard') }}" class="btn btn-success">Export Data</a></h1>
                         <table id="record-table" class="table table-hover table-bordered table-responsive">
                             <thead class="table-header">
                                 <tr>
@@ -64,7 +64,7 @@
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-body">
-                        <h1>Transaksi Detail ID</h1>
+                    <h1 class="d-flex justify-content-between">Transaksi Detail ID <a href="{{ route('export.dashboarddtl') }}" class="btn btn-success">Export Data</a></h1>
                         <table id="spareparts-table" class="table table-hover table-bordered table-responsive">
                             <thead class="table-header">
                                 <tr>

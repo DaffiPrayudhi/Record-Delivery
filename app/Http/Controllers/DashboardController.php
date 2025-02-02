@@ -5,8 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\M_Qty;
 use Yajra\DataTables\Facades\DataTables;
-use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\SparepartsImports;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ErrorLogExport;
+use App\Exports\ErrorLogRchExport;
+use App\Exports\DashboardTransaksi;
+use App\Exports\DashboardTransaksiDetail;
+use App\Exports\DashboardRecehTransaksi;
+use App\Exports\DashboardRecehTransaksiDetail;
 use DB;
 
 class DashboardController extends Controller
@@ -230,5 +236,35 @@ class DashboardController extends Controller
     
         return DataTables::of($query)->make(true);
     }   
+
+    public function exportErrorLogs()
+    {
+        return Excel::download(new ErrorLogExport, 'error_logs.xlsx');
+    }
+
+    public function exportErrorLogsRch()
+    {
+        return Excel::download(new ErrorLogRchExport, 'error_logs_rch.xlsx');
+    }
+
+    public function dashboardTransaksi()
+    {
+        return Excel::download(new DashboardTransaksi, 'delivery.xlsx');
+    }
+
+    public function dashboardTransaksiDetail()
+    {
+        return Excel::download(new DashboardTransaksiDetail, 'delivery_detail.xlsx');
+    }
+
+    public function dashboardRecehTransaksi()
+    {
+        return Excel::download(new DashboardRecehTransaksi, 'deliveryreceh.xlsx');
+    }
+
+    public function dashboardRecehTransaksiDetail()
+    {
+        return Excel::download(new DashboardRecehTransaksiDetail, 'deliveryreceh_detail.xlsx');
+    }
     
 }
