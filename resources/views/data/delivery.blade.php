@@ -211,57 +211,7 @@ $(document).ready(function() {
                 isErrorSoundPlaying = true;
             }
 
-            if (['Format data salah!', 'Tidak dapat menginput data melebihi quantity', 'Quantity tidak dapat melebihi quantity record'].includes(message)) { 
-                localStorage.setItem('showPasswordError', 'true');
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    html: `<p>${message}</p>
-                        <textarea id="noteInput" class="swal2-input" placeholder="Masukkan catatan" style="height: 100px; width: 100%; resize: none; padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;"></textarea>`,
-                    confirmButtonText: 'OK',
-                    preConfirm: () => {
-                        const note = document.getElementById('noteInput').value.trim();
-                        if (!note) {
-                            Swal.showValidationMessage('Catatan tidak boleh kosong.');
-                            return false;
-                        }
-                        return note;
-                    },
-                    allowOutsideClick: false
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const note = result.value;
-                        const noTransaksi = "{{ session('no_transaksi') }}";
-                        const tglBlnThn = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
-                        fetch("{{ route('save.log') }}", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                            },
-                            body: JSON.stringify({
-                                no_transaksi: noTransaksi,
-                                tgl_bln_thn: tglBlnThn,
-                                note: note
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                stopErrorSound();
-                                isErrorSoundPlaying = false;
-                                localStorage.removeItem('showPasswordError');
-                            } else {
-                                Swal.showValidationMessage('Gagal menyimpan log.');
-                            }
-                        })
-                        .catch(error => {
-                            Swal.showValidationMessage(error.message);
-                        });
-                    }
-                });
-            } else if (['Part Number tidak sesuai', 'Data sudah ada dalam database'].includes(message)) {
+            if (['Part Number tidak sesuai', 'Data sudah ada dalam database'].includes(message)) {
                 localStorage.setItem('showPasswordError', 'true');
                 showPasswordProtectedPopup(message);
             } else {
@@ -277,10 +227,43 @@ $(document).ready(function() {
                             Swal.showValidationMessage('Catatan tidak boleh kosong.');
                             return false;
                         }
-                        return true;
+
+                        const noTransaksi = "{{ session('no_transaksi') }}";
+                        const tglBlnThn = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+                        return fetch("{{ route('save.log') }}", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                            },
+                            body: JSON.stringify({
+                                no_transaksi: noTransaksi,
+                                tgl_bln_thn: tglBlnThn,
+                                note: note
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data.success) {
+                                Swal.showValidationMessage('Gagal menyimpan log.');
+                                return false;
+                            }
+                            return true;
+                        })
+                        .catch(error => {
+                            Swal.showValidationMessage(error.message);
+                            return false;
+                        });
                     },
                     allowOutsideClick: false
+                }).then(() => {
+                    stopErrorSound();
+                    isErrorSoundPlaying = false;
+                    localStorage.removeItem('showPasswordError');
                 });
+
+                localStorage.setItem('showPasswordError', 'true');
             }
         }
 
@@ -297,8 +280,8 @@ $(document).ready(function() {
                 icon: 'error',
                 title: 'Gagal',
                 html: `<p>${errorMessage}</p>
-                    <textarea id="noteInput" class="swal2-input" placeholder="Masukkan catatan" autocomplete="off" style="height: 100px; width: 100%; resize: none; padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;"></textarea>
-                    <input type="password" id="passwordInput" class="swal2-input" placeholder="Masukkan password" style="padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;">`,  
+                        <textarea id="noteInput" class="swal2-input" placeholder="Masukkan catatan" autocomplete="off" style="height: 100px; width: 100%; resize: none; padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;"></textarea>
+                        <input type="password" id="passwordInput" class="swal2-input" placeholder="Masukkan password" style="padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;">`,  
                 confirmButtonText: 'Submit',
                 preConfirm: () => {
                     const password = document.getElementById('passwordInput').value;
@@ -319,7 +302,7 @@ $(document).ready(function() {
                     .then(data => {
                         if (data.success) {
                             const noTransaksi = "{{ session('no_transaksi') }}";
-                            const tglBlnThn = new Date().toISOString().slice(0, 19).replace('T', ' '); 
+                            const tglBlnThn = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
                             return fetch("{{ route('save.log') }}", {
                                 method: "POST",
@@ -332,25 +315,47 @@ $(document).ready(function() {
                                     tgl_bln_thn: tglBlnThn,
                                     note: note
                                 })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    localStorage.removeItem('showPasswordError'); 
+                                    stopErrorSound(); 
+                                    return true;
+                                } else {
+                                    throw new Error('Gagal menyimpan log.');
+                                }
+                            })
+                            .catch(error => {
+                                Swal.showValidationMessage(error.message);
+                                if (!isErrorSoundPlaying) {
+                                    playNotificationSound('error');
+                                    isErrorSoundPlaying = true;
+                                }
                             });
-                        }
-                        throw new Error('Password salah.');
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            stopErrorSound();
-                            isErrorSoundPlaying = false;
-                            localStorage.removeItem('showPasswordError');
                         } else {
-                            Swal.showValidationMessage('Gagal menyimpan log.');
+                            throw new Error(data.message || 'Password salah.');
                         }
                     })
                     .catch(error => {
                         Swal.showValidationMessage(error.message);
+                        if (!isErrorSoundPlaying) {
+                            playNotificationSound('error');
+                            isErrorSoundPlaying = true;
+                        }
                     });
-                },
-                allowOutsideClick: false
+                }
+            }).then(result => {
+                if (!result.isConfirmed) {
+                    localStorage.setItem('showPasswordError', 'true');
+                    showPasswordProtectedPopup(errorMessage);
+                } else {
+                    document.getElementById('passwordInput').focus();
+                }
+            }).catch(error => {
+                Swal.showValidationMessage(error.message);
+            }).finally(() => {
+                isErrorSoundPlaying = false;  
             });
         }
 

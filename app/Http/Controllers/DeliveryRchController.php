@@ -154,7 +154,6 @@ class DeliveryRchController extends Controller
         }
     }
 
-
     public function storereceh(Request $request)
     {
         $noTransaksi = $request->input('no_transaksi');
@@ -443,7 +442,22 @@ class DeliveryRchController extends Controller
         ]);
     }
     
+    public function saveLogRch(Request $request)
+    {
+        $validatedData = $request->validate([
+            'no_transaksi' => 'required|string',
+            'tgl_bln_thn' => 'required|string',
+            'note' => 'required|string',
+        ]);
 
+        Logs::create([
+            'no_transaksi' => $validatedData['no_transaksi'],
+            'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
+            'note' => $validatedData['note'],
+        ]);
+
+        return response()->json(['success' => true]);
+    }
     
 
 

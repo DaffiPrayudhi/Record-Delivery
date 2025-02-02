@@ -272,9 +272,45 @@ $(document).ready(function () {
             Swal.fire({
                 icon: 'error',
                 title: 'Gagal',
-                text: message,
+                html: `<p>${message}</p>
+                    <textarea id="noteInput" class="swal2-input" placeholder="Masukkan catatan" style="height: 100px; width: 100%; resize: none; padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;"></textarea>`,
                 confirmButtonText: 'OK',
-                showConfirmButton: true
+                preConfirm: () => {
+                    const note = document.getElementById('noteInput').value.trim();
+                    if (!note) {
+                        Swal.showValidationMessage('Catatan tidak boleh kosong.');
+                        return false;
+                    }
+
+                    const noTransaksi = "{{ session('no_transaksi') }}";
+                    const tglBlnThn = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+                    return fetch("{{ route('save.logrch') }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                        },
+                        body: JSON.stringify({
+                            no_transaksi: noTransaksi,
+                            tgl_bln_thn: tglBlnThn,
+                            note: note
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.success) {
+                            Swal.showValidationMessage('Gagal menyimpan log.');
+                            return false;
+                        }
+                        return true;
+                    })
+                    .catch(error => {
+                        Swal.showValidationMessage(error.message);
+                        return false;
+                    });
+                },
+                allowOutsideClick: false
             }).then(() => {
                 stopErrorSound();
                 errorSoundLoop = false;
@@ -297,83 +333,82 @@ $(document).ready(function () {
             html: `<p>${errorMessage}</p>
                     <textarea id="noteInput" class="swal2-input" placeholder="Masukkan catatan" autocomplete="off" style="height: 100px; width: 100%; resize: none; padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;"></textarea>
                     <input type="password" id="passwordInput" class="swal2-input" placeholder="Masukkan password" style="padding: 10px; font-size: 1rem; border-radius: 10px; border: 1px solid #dcdcdc;">`,  
-                confirmButtonText: 'Submit',
-                preConfirm: () => {
-                    const password = document.getElementById('passwordInput').value;
-                    const note = document.getElementById('noteInput').value;
-                    if (!note.trim()) {
-                        Swal.showValidationMessage('Catatan tidak boleh kosong.');
-                        return false; 
-                    }
-                    return fetch("{{ route('verify.password') }}", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                        },
-                        body: JSON.stringify({ password })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const noTransaksi = "{{ session('no_transaksi') }}";
-                            const tglBlnThn = new Date().toISOString().slice(0, 19).replace('T', ' '); 
+            confirmButtonText: 'Submit',
+            preConfirm: () => {
+                const password = document.getElementById('passwordInput').value;
+                const note = document.getElementById('noteInput').value;
+                if (!note.trim()) {
+                    Swal.showValidationMessage('Catatan tidak boleh kosong.');
+                    return false; 
+                }
+                return fetch("{{ route('verify.password') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                    },
+                    body: JSON.stringify({ password })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const noTransaksi = "{{ session('no_transaksi') }}";
+                        const tglBlnThn = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-                            return fetch("{{ route('save.log') }}", {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json",
-                                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                                },
-                                body: JSON.stringify({
-                                    no_transaksi: noTransaksi,
-                                    tgl_bln_thn: tglBlnThn,
-                                    note: note
-                                })
+                        return fetch("{{ route('save.logrch') }}", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                            },
+                            body: JSON.stringify({
+                                no_transaksi: noTransaksi,
+                                tgl_bln_thn: tglBlnThn,
+                                note: note
                             })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    localStorage.removeItem('showPasswordError'); 
-                                    stopErrorSound(); 
-                                    errorSoundLoop = false; 
-                                    return true;
-                                } else {
-                                    throw new Error(data.message || 'Gagal menyimpan log.');
-                                }
-                            })
-                            .catch(error => {
-                                Swal.showValidationMessage(error.message);
-                                if (!errorSoundLoop) {
-                                    playErrorSound();
-                                    errorSoundLoop = true;
-                                }
-                            });
-                        } else {
-                            throw new Error(data.message || 'Password salah.');
-                        }
-                    })
-                    .catch(error => {
-                        Swal.showValidationMessage(error.message);
-                        if (!errorSoundLoop) {
-                            playErrorSound();
-                            errorSoundLoop = true;
-                        }
-                    });
-                }
-            }).then(result => {
-                if (!result.isConfirmed) {
-                    localStorage.setItem('showPasswordError', 'true');
-                    showPasswordProtectedPopup(errorMessage);
-                } else {
-                    document.getElementById('passwordInput').focus();
-                }
-            }).catch(error => {
-                Swal.showValidationMessage(error.message);
-            }).finally(() => {
-                errorSoundLoop = false;  
-            });
-        }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                localStorage.removeItem('showPasswordError'); 
+                                stopErrorSound(); 
+                                return true;
+                            } else {
+                                throw new Error('Gagal menyimpan log.');
+                            }
+                        })
+                        .catch(error => {
+                            Swal.showValidationMessage(error.message);
+                            if (!isErrorSoundPlaying) {
+                                playNotificationSound('error');
+                                isErrorSoundPlaying = true;
+                            }
+                        });
+                    } else {
+                        throw new Error(data.message || 'Password salah.');
+                    }
+                })
+                .catch(error => {
+                    Swal.showValidationMessage(error.message);
+                    if (!isErrorSoundPlaying) {
+                        playNotificationSound('error');
+                        isErrorSoundPlaying = true;
+                    }
+                });
+            }
+        }).then(result => {
+            if (!result.isConfirmed) {
+                localStorage.setItem('showPasswordError', 'true');
+                showPasswordProtectedPopup(errorMessage);
+            } else {
+                document.getElementById('passwordInput').focus();
+            }
+        }).catch(error => {
+            Swal.showValidationMessage(error.message);
+        }).finally(() => {
+            isErrorSoundPlaying = false;  
+        });
+    }
 });
 </script>
 

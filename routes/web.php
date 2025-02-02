@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/delivery/{noTransaksi}/total-qty-rch', [DeliveryRchController::class, 'getTotalQty']);
     Route::post('/delivery/compare-rch', [DeliveryRchController::class, 'compareQty'])->name('delivery.comparereceh');
     Route::post('/verify-passwordrch', [DeliveryRchController::class, 'verifyPasswordRch'])->name('verify.passwordrch');
+    Route::post('/save-log-rch', [DeliveryRchController::class, 'saveLogRch'])->name('save.logrch');
 
     //delivery
     Route::resource('/delivery', DeliveryController::class);
