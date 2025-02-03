@@ -379,9 +379,9 @@ $(document).ready(function () {
                         })
                         .catch(error => {
                             Swal.showValidationMessage(error.message);
-                            if (!isErrorSoundPlaying) {
+                            if (!errorSoundLoop) {
                                 playNotificationSound('error');
-                                isErrorSoundPlaying = true;
+                                errorSoundLoop = true;
                             }
                         });
                     } else {
@@ -390,9 +390,9 @@ $(document).ready(function () {
                 })
                 .catch(error => {
                     Swal.showValidationMessage(error.message);
-                    if (!isErrorSoundPlaying) {
+                    if (!errorSoundLoop) {
                         playNotificationSound('error');
-                        isErrorSoundPlaying = true;
+                        errorSoundLoop = true;
                     }
                 });
             }
@@ -406,7 +406,7 @@ $(document).ready(function () {
         }).catch(error => {
             Swal.showValidationMessage(error.message);
         }).finally(() => {
-            isErrorSoundPlaying = false;  
+            errorSoundLoop = false;  
         });
     }
 });
