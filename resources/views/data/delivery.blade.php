@@ -283,7 +283,8 @@ $(document).ready(function() {
                             isErrorSoundPlaying = true;
                         }
                     });
-                }
+                },
+                allowOutsideClick: false
             }).then(result => {
                 if (!result.isConfirmed) {
                     localStorage.setItem('showPasswordError', 'true');
@@ -297,8 +298,9 @@ $(document).ready(function() {
                 isErrorSoundPlaying = false;  
             });
 
-                localStorage.setItem('showPasswordError', 'true');
             }
+
+            localStorage.setItem('showPasswordError', 'true');
         }
 
         if (localStorage.getItem('showPasswordError')) {

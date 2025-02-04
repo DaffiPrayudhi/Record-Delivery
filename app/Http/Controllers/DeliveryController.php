@@ -304,7 +304,7 @@ class DeliveryController extends Controller
     public function verifyPassword(Request $request)
     {
         $password = $request->input('password');
-        if ($password === 'warehouse021') {
+        if ($password === 'Ce9vM3Ln4IYR') {
             return response()->json(['success' => true]);
         }
         return response()->json(['success' => false, 'message' => 'Password salah.'], 403);

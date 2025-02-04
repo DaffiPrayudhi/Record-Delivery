@@ -3,7 +3,7 @@
         <div class="d-flex">
             <!-- LOGO -->
             <div class="navbar-brand-box">
-                <a href="{{ route('dashboarduser') }}" class="logo logo-dark">
+                <a href="{{ route('dashboard') }}" class="logo logo-dark">
                     <span class="logo-sm">
                         <img src="/B/assets/images/AVI.png" alt="" height="30">
                     </span>
@@ -12,7 +12,7 @@
                     </span>
                 </a>
 
-                <a href="{{ route('dashboarduser') }}" class="logo logo-light">
+                <a href="{{ route('dashboard') }}" class="logo logo-light">
                     <span class="logo-sm">
                         <img src="/B/assets/images/AVI.png" alt="" height="10">
                     </span>
@@ -55,12 +55,11 @@
                 <button type="button" class="btn header-item bg-light-subtle border-start border-end" id="page-header-user-dropdown"
                     data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <img class="rounded-circle header-profile-user" src="/B/assets/images/avatar.png" alt="Header Avatar">
-                    <span class="d-none d-xl-inline-block ms-1 fw-medium">User</span>
+                    <span class="d-none d-xl-inline-block ms-1 fw-medium">Admin</span>
                     <i class="mdi mdi-chevron-down d-none d-xl-inline-block"></i>
                 </button>
                 <div class="dropdown-menu dropdown-menu-end">
                     <!-- item-->
-                    <a class="dropdown-item" href="{{route('dashboarduser')}}"><i class="mdi mdi-face-profile font-size-16 align-middle me-1"></i> Profile</a>
                     <div class="dropdown-divider"></div>
                     <form id="logout-form" action="{{ route('logout') }}" method="POST">
                         @csrf

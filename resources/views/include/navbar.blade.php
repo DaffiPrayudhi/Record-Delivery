@@ -55,7 +55,7 @@
                 <button type="button" class="btn header-item bg-light-subtle border-start border-end" id="page-header-user-dropdown"
                     data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <img class="rounded-circle header-profile-user" src="/B/assets/images/avatar.png" alt="Header Avatar">
-                    <span class="d-none d-xl-inline-block ms-1 fw-medium">Admin</span>
+                    <span class="d-none d-xl-inline-block ms-1 fw-medium">Warehouse</span>
                     <i class="mdi mdi-chevron-down d-none d-xl-inline-block"></i>
                 </button>
                 <div class="dropdown-menu dropdown-menu-end">

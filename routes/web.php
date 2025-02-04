@@ -7,6 +7,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RecordController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DashboardAdminController;
 use App\Models\M_Model_Part;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -38,13 +39,17 @@ Route::middleware('auth')->group(function () {
     Route::get('error-logs-rch', [DashboardController::class, 'getDataErrorRch'])->name('getrecord.errorrch');
     Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
     Route::get('/dashboardreceh', [DashboardController::class,'create'])->name('dashboardreceh');
-    Route::get('/dashboarderror', [DashboardController::class,'errorview'])->name('dashboarderror');
     Route::get('export-error-logs', [DashboardController::class, 'exportErrorLogs'])->name('export.error');
     Route::get('export-error-logs-rch', [DashboardController::class, 'exportErrorLogsRch'])->name('export.errorrch');
     Route::get('dashboard-transaksi', [DashboardController::class, 'dashboardTransaksi'])->name('export.dashboard');
     Route::get('dashboard-transaksi-detail', [DashboardController::class, 'dashboardTransaksiDetail'])->name('export.dashboarddtl');
     Route::get('dashboardrch-transaksi', [DashboardController::class, 'dashboardRecehTransaksi'])->name('export.dashboardrch');
     Route::get('dashboardrch-transaksi-detail', [DashboardController::class, 'dashboardRecehTransaksiDetail'])->name('export.dashboarddtlrch');
+
+    //dashboard admin
+    Route::get('/dashboardadmin', [DashboardAdminController::class,'index'])->name('dashboardadmin');
+    Route::get('/dashboardrecehadmin', [DashboardAdminController::class,'create'])->name('dashboardrecehadmin');
+    Route::get('/dashboarderror', [DashboardAdminController::class,'errorview'])->name('dashboarderror');
 
     //profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

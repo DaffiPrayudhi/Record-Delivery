@@ -265,7 +265,7 @@ $(document).ready(function () {
             errorSoundLoop = true;
         }
 
-        if (message === 'Serial number sudah ada dalam database' || message === 'Serial number tidak sesuai' || message === 'Tidak dapat menginput data melebihi quantity.') {
+        if (message === 'No transaksi tidak ditemukan atau tidak valid!' || message === 'Serial number sudah ada dalam database' || message === 'Serial number tidak sesuai' || message === 'Tidak dapat menginput data melebihi quantity.') {
             localStorage.setItem('showPasswordError', 'true');
             showPasswordProtectedPopup(message);
         } else {
@@ -341,7 +341,7 @@ $(document).ready(function () {
                     Swal.showValidationMessage('Catatan tidak boleh kosong.');
                     return false; 
                 }
-                return fetch("{{ route('verify.password') }}", {
+                return fetch("{{ route('verify.passwordrch') }}", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

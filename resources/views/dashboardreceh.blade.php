@@ -20,7 +20,6 @@
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                         <li><a class="dropdown-item" href="{{ route('dashboard') }}">Dashboard</a></li>
                         <li><a class="dropdown-item" href="{{ route('dashboardreceh') }}">Dashboard Receh</a></li>
-                        <li><a class="dropdown-item" href="{{ route('dashboarderror') }}">Error Logs</a></li>
                     </ul>
                 </div>
 

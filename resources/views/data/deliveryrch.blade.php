@@ -193,7 +193,7 @@
                         Swal.showValidationMessage('Catatan tidak boleh kosong.');
                         return false; 
                     }
-                    return fetch("{{ route('verify.password') }}", {
+                    return fetch("{{ route('verify.passwordrch') }}", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -247,7 +247,8 @@
                             isErrorSoundPlaying = true;
                         }
                     });
-                }
+                },
+                allowOutsideClick: false
             }).then(result => {
                 if (!result.isConfirmed) {
                     localStorage.setItem('showPasswordError', 'true');
@@ -287,7 +288,7 @@
                         Swal.showValidationMessage('Catatan tidak boleh kosong.');
                         return false; 
                     }
-                    return fetch("{{ route('verify.password') }}", {
+                    return fetch("{{ route('verify.passwordrch') }}", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",

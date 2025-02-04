@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.appadmn')
 
 @section('header')
     <h2 class="text-3xl font-semibold text-gray-800 dark:text-gray-200">
@@ -12,18 +12,19 @@
         <div class="row">
             <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center">
-                <h4 class="mb-sm-0 font-size-18 me-3">Record Delivery</h4>
+                <h4 class="mb-sm-0 font-size-18 me-3">Record Delivery Receh Admin</h4> 
                 <div class="dropdown">
                     <button class="btn btn-secondary btn-smsa dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fa fa-caret-down"></i>
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                        <li><a class="dropdown-item" href="{{ route('dashboard') }}">Dashboard</a></li>
-                        <li><a class="dropdown-item" href="{{ route('dashboardreceh') }}">Dashboard Receh</a></li>
+                        <li><a class="dropdown-item" href="{{ route('dashboardadmin') }}">Dashboard</a></li>
+                        <li><a class="dropdown-item" href="{{ route('dashboardrecehadmin') }}">Dashboard Receh</a></li>
+                        <li><a class="dropdown-item" href="{{ route('dashboarderror') }}">Error Logs</a></li>
                     </ul>
                 </div>
 
-                <div class="page-title-right ms-auto">
+                <div class="page-title-right ms-auto"> 
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a href="javascript: void(0);">Dashboard</a></li>
                         <li class="breadcrumb-item active">Record Delivery</li>
@@ -37,7 +38,7 @@
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-body">
-                        <h1 class="d-flex justify-content-between">Transaksi ID <a href="{{ route('export.dashboard') }}" class="btn btn-success">Export Data</a></h1>
+                        <h1 class="d-flex justify-content-between">Transaksi ID <a href="{{ route('export.dashboardrch') }}" class="btn btn-success">Export Data</a></h1>
                         <table id="record-table" class="table table-hover table-bordered table-responsive">
                             <thead class="table-header">
                                 <tr>
@@ -63,7 +64,7 @@
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-body">
-                    <h1 class="d-flex justify-content-between">Transaksi Detail ID <a href="{{ route('export.dashboarddtl') }}" class="btn btn-success">Export Data</a></h1>
+                    <h1 class="d-flex justify-content-between">Transaksi Detail ID <a href="{{ route('export.dashboarddtlrch') }}" class="btn btn-success">Export Data</a></h1>
                         <table id="spareparts-table" class="table table-hover table-bordered table-responsive">
                             <thead class="table-header">
                                 <tr>
@@ -72,8 +73,8 @@
                                     <th>Model</th>
                                     <th>Part Name</th>
                                     <th>Part Number</th>
+                                    <th>Serial Number</th>
                                     <th>Lot Number</th>
-                                    <th>Tipe Delivery</th>
                                     <th>Plant Destination</th>
                                     <th>Qty</th>
                                 </tr>
@@ -103,7 +104,7 @@
         color: #fff; 
         background-color: #2088ef;
     }
-
+    
     .btn-smsa {
         background-color: #f4f5f8;
         color: #000;
@@ -117,7 +118,6 @@
         color: #000; 
         box-shadow: none;
     }
-
 </style>
 @endsection
 
@@ -129,7 +129,7 @@
            processing: true,
            serverSide: true,
            ajax: {
-               url: '{{ route('getrecord.data') }}',
+               url: '{{ route('getrecord.datarch') }}',
                type: 'GET'
            },
            columns: [
@@ -141,7 +141,7 @@
                { data: 'part_number', name: 'part_number' },
                { data: 'tipe_delv', name: 'tipe_delv' },
                { data: 'plant_dest', name: 'plant_dest' },
-               { data: 'qty', name: 'qty' },
+               { data: 'qty_receh', name: 'qty_receh' },
                { 
                    data: 'status', 
                    name: 'status',
@@ -163,7 +163,7 @@
            lengthMenu: [5, 10, 25, 50],
            lengthChange: false,
            responsive: true,
-            order: [[1, 'desc']]
+           order: [[1, 'desc']]
        });
    });
 </script>
@@ -174,7 +174,7 @@
         processing: true,
         serverSide: true,
         ajax: {
-            url: '{{ route('getspareparts.data') }}',
+            url: '{{ route('getspareparts.datarch') }}',
             type: 'GET'
         },
         columns: [
@@ -183,8 +183,8 @@
             { data: 'model', name: 'model'}, 
             { data: 'part_name', name: 'part_name'},         
             { data: 'part_number', name: 'part_number'},     
-            { data: 'lot_number', name: 'lot_number'},       
-            { data: 'tipe_delv', name: 'tipe_delv'},       
+            { data: 'serial_number', name: 'serial_number'},     
+            { data: 'lot_number', name: 'lot_number'},      
             { data: 'plant_dest', name: 'plant_dest'},    
             { data: 'qty', name: 'qty'}
         ],
