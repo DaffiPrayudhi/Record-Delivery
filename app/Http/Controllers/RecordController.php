@@ -66,9 +66,14 @@ class RecordController extends Controller
             ->orderBy('no_transaksi', 'DESC')
             ->first();
 
-        $counter = $lastTransaction
-            ? str_pad((int)substr($lastTransaction->no_transaksi, 9) + 1, 2, '0', STR_PAD_LEFT)
-            : '01';
+        $counter = '01'; 
+
+        if ($lastTransaction) {
+            $lastCounter = substr($lastTransaction->no_transaksi, 8); 
+            $nextCounter = (int)$lastCounter + 1;
+            
+            $counter = str_pad($nextCounter, 2, '0', STR_PAD_LEFT);
+        }
 
         $noTransaksi = 'AV' . $dateNow . $counter;
 
@@ -78,9 +83,14 @@ class RecordController extends Controller
             ->orderBy('no_transaksi', 'DESC')
             ->first();
 
-        $counterRch = $lastTransactionRch
-            ? str_pad((int)substr($lastTransactionRch->no_transaksi, 9) + 1, 2, '0', STR_PAD_LEFT)
-            : '01';
+        $counterRch = '01'; 
+
+        if ($lastTransactionRch) {
+            $lastCounterRch = substr($lastTransactionRch->no_transaksi, 8); 
+            $nextCounterRch = (int)$lastCounterRch + 1; 
+
+            $counterRch = str_pad($nextCounterRch, 2, '0', STR_PAD_LEFT);
+        }
 
         $noTransaksiRch = 'RC' . $dateNow . $counterRch;
     
