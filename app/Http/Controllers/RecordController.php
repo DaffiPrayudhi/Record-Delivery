@@ -50,137 +50,142 @@ class RecordController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'tgl_bln_thn' => 'required|date',
-            'tgl_bln_thn_dlv' => 'required|date',
-            'model' => 'required|string',
-            'qty_type' => 'required|string',
-            'qty' => 'nullable|integer|required_if:qty_type,full',
-            'qty_receh' => 'nullable|integer|required_if:qty_type,receh',
+            'tgl_bln_thn'       => 'required|date',
+            'tgl_bln_thn_dlv'   => 'required|date',
+            'model'             => 'required|string',
+            'qty_type'          => 'required|string',
+            'qty'               => 'nullable|integer|required_if:qty_type,full',
+            'qty_receh'         => 'nullable|integer|required_if:qty_type,receh',
         ]);
 
-        $dateNow = now()->format('dmy');
+        return DB::transaction(function () use ($request, $validatedData) {
 
-        $lastTransaction = DB::table('record')
-            ->select('no_transaksi')
-            ->where('no_transaksi', 'like', 'AV' . $dateNow . '%')
-            ->orderBy('no_transaksi', 'DESC')
-            ->first();
+            $dateNow = now()->format('dmy');
 
-        $counter = '01'; 
+            $lastTransaction = DB::table('record')
+                ->select('no_transaksi')
+                ->where('no_transaksi', 'like', 'AV' . $dateNow . '%')
+                ->orderBy('no_transaksi', 'DESC')
+                ->lockForUpdate() 
+                ->first();
 
-        if ($lastTransaction) {
-            $lastCounter = substr($lastTransaction->no_transaksi, 8); 
-            $nextCounter = (int)$lastCounter + 1;
+            $counter = '01'; 
+
+            if ($lastTransaction) {
+                $lastCounter = substr($lastTransaction->no_transaksi, 8); 
+                $nextCounter = (int)$lastCounter + 1;
+                $counter = str_pad($nextCounter, 2, '0', STR_PAD_LEFT);
+            }
+
+            $noTransaksi = 'AV' . $dateNow . $counter;
+
+            $lastTransactionRch = DB::table('record_receh')
+                ->select('no_transaksi')
+                ->where('no_transaksi', 'like', 'RC' . $dateNow . '%')
+                ->orderBy('no_transaksi', 'DESC')
+                ->first();
+
+            $counterRch = '01'; 
+
+            if ($lastTransactionRch) {
+                $lastCounterRch = substr($lastTransactionRch->no_transaksi, 8); 
+                $nextCounterRch = (int)$lastCounterRch + 1; 
+                $counterRch = str_pad($nextCounterRch, 2, '0', STR_PAD_LEFT);
+            }
+
+            $noTransaksiRch = 'RC' . $dateNow . $counterRch;
+        
+            if ($validatedData['qty_type'] === 'full') {
+                if (!$request->has('qty') || empty($validatedData['qty'])) {
+                    return redirect()->back()
+                        ->withErrors(['qty' => 'Quantity Full harus diisi.'])
+                        ->withInput();
+                }
+        
+                $record = new Record([
+                    'no_transaksi'      => $noTransaksi,
+                    'tgl_bln_thn'       => $validatedData['tgl_bln_thn'],
+                    'tgl_bln_thn_dlv'   => $validatedData['tgl_bln_thn_dlv'],
+                    'model'             => $validatedData['model'],
+                    'plant_dest'        => $request->input('plant_dest'),
+                    'tipe_delv'         => $request->input('tipe_delv'),
+                    'pic'               => $request->input('pic'),
+                    'flag'              => 1,
+                    'qty'               => $validatedData['qty'],
+                    'qty_receh'         => 0,
+                ]);
+
+                $partNumbers = M_Model_Part::where('model', $validatedData['model'])
+                                    ->distinct()
+                                    ->pluck('part_number')
+                                    ->toArray();
+        
+                if ($record->save()) {
+                    $request->session()->put([
+                        'no_transaksi'      => $noTransaksi,
+                        'tgl_bln_thn'       => $validatedData['tgl_bln_thn'],
+                        'tgl_bln_thn_dlv'   => $validatedData['tgl_bln_thn_dlv'],
+                        'plant_dest'        => $request->input('plant_dest'),
+                        'tipe_delv'         => $request->input('tipe_delv'),
+                        'model'             => $validatedData['model'],
+                        'qty'               => $validatedData['qty'],
+                        'pic'               => $request->input('pic'),
+                        'part_numbers'      => $partNumbers, 
+                    ]);
             
-            $counter = str_pad($nextCounter, 2, '0', STR_PAD_LEFT);
-        }
-
-        $noTransaksi = 'AV' . $dateNow . $counter;
-
-        $lastTransactionRch = DB::table('record_receh')
-            ->select('no_transaksi')
-            ->where('no_transaksi', 'like', 'RC' . $dateNow . '%')
-            ->orderBy('no_transaksi', 'DESC')
-            ->first();
-
-        $counterRch = '01'; 
-
-        if ($lastTransactionRch) {
-            $lastCounterRch = substr($lastTransactionRch->no_transaksi, 8); 
-            $nextCounterRch = (int)$lastCounterRch + 1; 
-
-            $counterRch = str_pad($nextCounterRch, 2, '0', STR_PAD_LEFT);
-        }
-
-        $noTransaksiRch = 'RC' . $dateNow . $counterRch;
-    
-        // $noTransaksi = 'AVI' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
-
-        // $noTransaksiRcd = 'RCH' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
-    
-        if ($validatedData['qty_type'] === 'full') {
-            if (!$request->has('qty') || empty($validatedData['qty'])) {
-                return redirect()->back()->withErrors(['qty' => 'Quantity Full harus diisi.'])->withInput();
+                    return redirect()->route('delivery.create')
+                        ->with('success', 'Data Quantity Full berhasil disimpan.');
+                }
             }
-    
-            $record = new Record([
-                'no_transaksi' => $noTransaksi,
-                'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
-                'tgl_bln_thn_dlv' => $validatedData['tgl_bln_thn_dlv'],
-                'model' => $validatedData['model'],
-                'plant_dest' => $request->input('plant_dest'),
-                'tipe_delv' => $request->input('tipe_delv'),
-                'pic' => $request->input('pic'),
-                'flag' => 1,
-                'qty' => $validatedData['qty'],
-                'qty_receh' => 0,
-            ]);
+            elseif ($validatedData['qty_type'] === 'receh') {
+                if (!$request->has('qty_receh') || empty($validatedData['qty_receh'])) {
+                    return redirect()->back()
+                        ->withErrors(['qty_receh' => 'Quantity Receh harus diisi.'])
+                        ->withInput();
+                }
+        
+                $recordRch = new RecordRch([
+                    'no_transaksi'      => $noTransaksiRch,
+                    'tgl_bln_thn'       => $validatedData['tgl_bln_thn'],
+                    'tgl_bln_thn_dlv'   => $validatedData['tgl_bln_thn_dlv'],
+                    'model'             => $validatedData['model'],
+                    'plant_dest'        => $request->input('plant_dest'),
+                    'tipe_delv'         => $request->input('tipe_delv'),
+                    'pic'               => $request->input('pic'),
+                    'flag'              => 1,
+                    'qty_receh'         => $validatedData['qty_receh'],
+                    'qty'               => 0,
+                ]);
 
-            $partNumbers = M_Model_Part::where('model', $validatedData['model'])
+                $partNumbers = M_Model_Part::where('model', $validatedData['model'])
                                     ->distinct()
                                     ->pluck('part_number')
                                     ->toArray();
-    
-            if ($record->save()) {
-                $request->session()->put([
-                    'no_transaksi' => $noTransaksi,
-                    'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
-                    'tgl_bln_thn_dlv' => $validatedData['tgl_bln_thn_dlv'],
-                    'plant_dest' => $request->input('plant_dest'),
-                    'tipe_delv' => $request->input('tipe_delv'),
-                    'model' => $validatedData['model'],
-                    'qty' => $validatedData['qty'],
-                    'pic' => $request->input('pic'),
-                    'part_numbers' => $partNumbers, 
-                ]);
         
-                return redirect()->route('delivery.create')->with('success', 'Data Quantity Full berhasil disimpan.');
+                if ($recordRch->save()) {
+                    $request->session()->put([
+                        'no_transaksi'      => $noTransaksiRch,
+                        'tgl_bln_thn'       => $validatedData['tgl_bln_thn'],
+                        'tgl_bln_thn_dlv'   => $validatedData['tgl_bln_thn_dlv'],
+                        'model'             => $validatedData['model'],
+                        'plant_dest'        => $request->input('plant_dest'),
+                        'tipe_delv'         => $request->input('tipe_delv'),
+                        'pic'               => $request->input('pic'),
+                        'flag'              => 1,
+                        'qty_receh'         => $validatedData['qty_receh'],
+                        'qty'               => 0,
+                        'part_numbers'      => $partNumbers, 
+                    ]);
+
+                    return redirect()->route('deliveryrch.create')
+                        ->with('success', 'Data Quantity Receh berhasil disimpan.');
+                }
             }
-        }
         
-        elseif ($validatedData['qty_type'] === 'receh') {
-            if (!$request->has('qty_receh') || empty($validatedData['qty_receh'])) {
-                return redirect()->back()->withErrors(['qty_receh' => 'Quantity Receh harus diisi.'])->withInput();
-            }
-    
-            $recordRch = new RecordRch([
-                'no_transaksi' => $noTransaksiRch,
-                'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
-                'tgl_bln_thn_dlv' => $validatedData['tgl_bln_thn_dlv'],
-                'model' => $validatedData['model'],
-                'plant_dest' => $request->input('plant_dest'),
-                'tipe_delv' => $request->input('tipe_delv'),
-                'pic' => $request->input('pic'),
-                'flag' => 1,
-                'qty_receh' => $validatedData['qty_receh'],
-                'qty' => 0,
-            ]);
-
-            $partNumbers = M_Model_Part::where('model', $validatedData['model'])
-                                    ->distinct()
-                                    ->pluck('part_number')
-                                    ->toArray();
-    
-            if ($recordRch->save()) {
-                $request->session()->put([
-                    'no_transaksi' => $noTransaksiRch,
-                    'tgl_bln_thn' => $validatedData['tgl_bln_thn'],
-                    'tgl_bln_thn_dlv' => $validatedData['tgl_bln_thn_dlv'],
-                    'model' => $validatedData['model'],
-                    'plant_dest' => $request->input('plant_dest'),
-                    'tipe_delv' => $request->input('tipe_delv'),
-                    'pic' => $request->input('pic'),
-                    'flag' => 1,
-                    'qty_receh' => $validatedData['qty_receh'],
-                    'qty' => 0,
-                    'part_numbers' => $partNumbers, 
-                ]);
-
-                return redirect()->route('deliveryrch.create')->with('success', 'Data Quantity Receh berhasil disimpan.');
-            }
-        }
-    
-        return redirect()->back()->withErrors(['qty_type' => 'Terjadi kesalahan saat menyimpan data.'])->withInput();
+            return redirect()->back()
+                ->withErrors(['qty_type' => 'Terjadi kesalahan saat menyimpan data.'])
+                ->withInput();
+        });
     }
 
     public function show(Record $data)

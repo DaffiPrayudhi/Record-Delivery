@@ -205,7 +205,17 @@
                     .then(data => {
                         if (data.success) {
                             const noTransaksi = "{{ session('no_transaksi') }}";
-                            const tglBlnThn = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                            const now = new Date();
+                            const tglBlnThn = new Intl.DateTimeFormat('en-GB', {
+                                timeZone: 'Asia/Jakarta',
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                            }).format(now).replace(/\//g, '-').replace(',', '');
+
 
                             return fetch("{{ route('save.logrch') }}", {
                                 method: "POST",
@@ -300,7 +310,17 @@
                     .then(data => {
                         if (data.success) {
                             const noTransaksi = "{{ session('no_transaksi') }}";
-                            const tglBlnThn = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                            const now = new Date();
+                            const tglBlnThn = new Intl.DateTimeFormat('en-GB', {
+                                timeZone: 'Asia/Jakarta',
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                            }).format(now).replace(/\//g, '-').replace(',', '');
+
 
                             return fetch("{{ route('save.logrch') }}", {
                                 method: "POST",
